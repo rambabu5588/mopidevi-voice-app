@@ -118,10 +118,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function applyRoleDashboardFilter(userId) {
+        const isOperator = userId.startsWith('operator');
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            const tabName = btn.getAttribute('data-tab');
+            if (isOperator && (tabName === 'tab-training' || tabName === 'tab-voices' || tabName === 'tab-privacy')) {
+                btn.style.display = 'none';
+            } else {
+                btn.style.display = 'inline-flex';
+            }
+        });
+        
+        // If current active tab is hidden, switch to tab-create
+        const activeBtn = document.querySelector('.tab-btn.active');
+        if (activeBtn && activeBtn.style.display === 'none') {
+            document.querySelector('[data-tab="tab-create"]').click();
+        }
+    }
+
     if (userRoleSelect) {
         userRoleSelect.addEventListener('change', (e) => {
-            loadUserAssignedVoice(e.target.value);
+            const uid = e.target.value;
+            loadUserAssignedVoice(uid);
+            applyRoleDashboardFilter(uid);
         });
+        applyRoleDashboardFilter(userRoleSelect.value);
     }
 
     async function loadVoices() {

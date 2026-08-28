@@ -1,4 +1,4 @@
-# 🛕 Mopidevi AI Voice System — Master Architecture & Production Roadmap
+# 🛕 Mopidevi AI Voice System — Master Architecture & Mobile Application Flow
 
 - **Live 24/7 Cloud Application**: [https://mopidevi-voice-app.onrender.com](https://mopidevi-voice-app.onrender.com)
 - **GitHub Repository**: [https://github.com/rambabu5588/mopidevi-voice-app](https://github.com/rambabu5588/mopidevi-voice-app)
@@ -7,32 +7,41 @@
 
 ---
 
-## 🏗️ Master Subsystems Overview
+## 📱 Mobile Application Architecture — 2-Sided Workflow
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                      1. VOICE MANAGEMENT & TRAINING                         │
-│ (Admin / Voice Team)                                                        │
-│ Mobile Training Session → Dataset Alignment → Deep Learning XTTS v2 / RVC   │
-│ Speaker Embedding → Model Versioning (v1.0, v1.1, v2.0) → Approval         │
-└──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │
-                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                      2. USER MANAGEMENT & ASSIGNMENTS                       │
-│ (Admin Role & Permissions Engine)                                           │
-│ Roles: Super Admin | Voice Manager | Operator | Viewer                      │
-│ Database Assignment: User ──> Assigned Voice (e.g. Mopidevi Male v2.1)      │
-└──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │
-                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                      3. VOICE GENERATION PIPELINE                           │
-│ (Operator / Temple Staff Operation)                                         │
-│ Enter Telugu Script ──> Text Normalizer ──> Mopidevi Pronunciation ──>     │
-│ Speech Director ──> Deep Neural Voice Synthesis ──> Validation ──> Masterer │
-└─────────────────────────────────────────────────────────────────────────────┘
+                    MOBILE APPLICATION
+                            │
+            ┌───────────────┴───────────────┐
+            │                               │
+       ADMIN SIDE                     OPERATOR SIDE
+            │                               │
+      Voice Training                  Create Announcement
+      Voice Approval                  Select Template
+      User Management                 Select Voice (Assigned)
+      Voice Assignment                Select Style
+      Pronunciation Management        Select Temple Effects
+      Audio Library                   Generate & Preview Audio
 ```
+
+### 1. Simple User Roles & Authentication
+- **Login Screen**: Authenticates user and identifies role (`Super Admin`, `Voice Manager`, `Operator 01`, `Operator 02`).
+- **Operator View**: Displays **➕ Create Announcement**, **📝 Templates**, **🎧 My Audio**, **🎙 Assigned Voice**. Hides AI training parameters (`epochs`, `learning rate`, `GPU`, `phoneme IDs`).
+- **Admin View**: Displays **🎙 Voice Management**, **👥 Users & Voice Assignment**, **📚 Pronunciation Management**, **🧠 Training Status**, **🎧 Generated Audio Library**.
+
+### 2. Admin Voice Training & Versioning Subsystem (Steps 3-10)
+- **Create Voice Profile**: Voice Name, Language (Telugu), Voice Type (Male/Female), Description.
+- **Batch Sentence Reader (1/100)**: Displays training sentence one by one with live audio quality badges (`Speech detected`, `Good volume`, `Low noise`, `Correct duration`) -> `[Accept]` vs `[Retake]`.
+- **Backend Deep Learning & Versioning**: Batch submission triggers backend 512-dim XTTS v2 / RVC Neural Speaker Embedding extraction (`deep_clone.py`) and versioning (`v1.0` -> `v1.1` -> `v2.0`).
+- **Admin Approval & Feedback Loop**: Admin evaluates benchmark score (`[Listen]`, `[Compare]`, `[Approve]`, `[Retrain]`). Reports specific word issues (`మోపిదేవి` pronunciation) for targeted incremental fine-tuning.
+- **Central User Assignment**: Admin assigns approved voice version to operators. Operators get automatic model hot-swapping without re-downloading models.
+
+### 3. Operator Announcement Generation Subsystem (Steps 11-20)
+- **Select Template or Enter Script**: Quick templates (`Darshan Queue`, `Sarpa Dosha Pooja`, `Prasadam Distribution`, `Temple Welcome`, `Festival`, `Emergency Notice`). Auto-populates Telugu script slots!
+- **Select Delivery Style**: `🙏 Devotional`, `📢 Announcement`, `❤️ Warm`, `⚠️ Important`, `🎉 Festival`, `🕉️ Spiritual`. Automatically tunes speed, pitch, breathing pauses (`[700ms]`, `[400ms]`, `[600ms]`), and deity term volume emphasis (`+1.5dB`).
+- **Optional Temple Sound Effects**: Optional check-boxes (`Soft Temple Ambience`, `Bell`, `Conch`, `Festival Sound`) & intensity level slider (Low to High).
+- **Generation & Automatic Sentence Retry**: Sentence-by-sentence TTS pipeline with automated silence detection & single-sentence retry loop.
+- **Preview & Audio Library**: Live audio player with `Regenerate` options (`Same voice`, `Slower`, `More devotional`, `More clear`), MP3 download, and historical audio library grouped by `Today` and `Yesterday`.
 
 ---
 

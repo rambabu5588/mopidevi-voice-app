@@ -141,12 +141,20 @@ async def process_announcement_pipeline(job_id: str):
             progress_callback=report_progress
         )
 
-        # Stage 3: Pure Audio Mastering (-14 dBFS target, no sound effects)
-        db.update_job_status(job_id, "PROCESSING", "● Final speech audio mastering", 90)
+        # Stage 3: Audio Mastering & Optional Temple Effects
+        db.update_job_status(job_id, "PROCESSING", "● Final speech audio mastering & temple effects", 90)
         out_wav = os.path.join(OUTPUTS_DIR, f"announcement_{job_id}.wav")
         out_mp3 = os.path.join(OUTPUTS_DIR, f"announcement_{job_id}.mp3")
         
-        mastered = master_speech_audio(speech_audio, out_wav, out_mp3)
+        mixed_audio = speech_audio
+        if fx_settings and any(fx_settings.values()):
+            try:
+                from backend.sound_effects.fx_mixer import TempleEffectsMixer
+                mixed_audio = TempleEffectsMixer.mix_effects([speech_audio], fx_settings)
+            except Exception as ex:
+                print(f"[Pipeline] FX mixing notice: {ex}")
+
+        mastered = master_speech_audio(mixed_audio, out_wav, out_mp3)
 
         if mastered:
             rel_wav = f"/api/audio/announcement_{job_id}.wav"
