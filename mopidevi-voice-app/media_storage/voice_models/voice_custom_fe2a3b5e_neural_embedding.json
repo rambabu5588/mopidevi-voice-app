@@ -1,0 +1,30 @@
+{
+  "voice_id": "voice_custom_fe2a3b5e",
+  "architecture": "XTTS_v2_Neural_Speaker_Encoder",
+  "speaker_embedding_dim": 512,
+  "pitch_f0": 82.4,
+  "pitch_shift_semitones": 0,
+  "estimated_gender": "male",
+  "rms_energy": 0.3535,
+  "spectral_centroid_hz": 886.5791461369364,
+  "spectral_flatness": 0.26899749452470295,
+  "latent_vector_sample": [
+    0.10757084935903549,
+    0.002597426064312458,
+    -0.003490118309855461,
+    -0.021295273676514626,
+    0.03764073923230171,
+    0.04497207701206207,
+    -0.02661285549402237,
+    0.05582800507545471,
+    -0.08169432729482651,
+    0.052410028874874115,
+    0.05351715534925461,
+    0.01094646006822586,
+    0.08648104965686798,
+    0.025609489530324936,
+    0.05819439888000488,
+    -0.12086260318756104
+  ],
+  "audio_source_path": "E:\\AI Clone\\media_storage\\recordings\\voice_custom_fe2a3b5e.wav"
+}

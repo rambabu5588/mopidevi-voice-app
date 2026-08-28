@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+*.log
+.system_generated/
+scratch/
+.tempmediaStorage/
+media_storage/recordings/
+media_storage/outputs/
+.idea/
+.vscode/
+build/
+.dart_tool/

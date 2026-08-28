@@ -1,0 +1,30 @@
+{
+  "voice_id": "voice_custom_audit_01",
+  "architecture": "XTTS_v2_Neural_Speaker_Encoder",
+  "speaker_embedding_dim": 512,
+  "pitch_f0": 87.4,
+  "pitch_shift_semitones": 0,
+  "estimated_gender": "male",
+  "rms_energy": 0.3535,
+  "spectral_centroid_hz": 612.0429130469727,
+  "spectral_flatness": 0.1760636813685284,
+  "latent_vector_sample": [
+    0.002072133356705308,
+    -0.0501101016998291,
+    -0.04059479758143425,
+    0.003360963659361005,
+    0.05972512438893318,
+    0.012413760647177696,
+    -0.038353778421878815,
+    -0.003431031946092844,
+    -0.022016143426299095,
+    -0.06108240410685539,
+    0.035198502242565155,
+    0.13736097514629364,
+    0.005144198425114155,
+    -0.014608247205615044,
+    -0.04047244414687157,
+    0.055172938853502274
+  ],
+  "audio_source_path": "C:\\Users\\venka\\.gemini\\antigravity-ide\\brain\\21dd6b2e-d712-4e48-9e71-07c0fa7b374d\\scratch\\deep_speaker_sample.wav"
+}

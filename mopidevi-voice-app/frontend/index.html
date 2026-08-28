@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mopidevi Temple Telugu Voice Application | మోపిదేవి క్షేత్రం</title>
+    <!-- Google Fonts: Inter & Noto Sans Telugu -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top App Bar -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="temple-logo">🕉️</div>
+                <div class="header-titles">
+                    <h1>మోపిదేవి ఆలయ తెలుగు ధ్వని అనువర్తనం</h1>
+                    <p class="subtitle">Mopidevi Temple Telugu Voice & Audio Studio</p>
+                </div>
+            </div>
+            <div class="header-right" style="display:flex; align-items:center; gap:16px;">
+                <div class="assigned-voice-pill" style="background:#1E293B; border:1px solid #334155; padding:6px 12px; border-radius:20px; font-size:0.85rem;">
+                    <span style="color:#94A3B8;">కేటాయించిన స్వరం: </span>
+                    <strong id="assigned-voice-badge" style="color:#E5A93C;">తెలుగు ప్రకటనా స్వరం (v1.1)</strong>
+                </div>
+                <div class="user-badge">
+                    <span class="status-dot"></span>
+                    <select id="user-role-select" style="background:transparent; border:none; color:#F8FAFC; font-weight:600; font-family:inherit; cursor:pointer;">
+                        <option value="operator_01" style="background:#1E293B;">Temple Operator 1 (Operator)</option>
+                        <option value="operator_02" style="background:#1E293B;">Temple Operator 2 (Operator)</option>
+                        <option value="manager_01" style="background:#1E293B;">Voice Manager (Manager)</option>
+                        <option value="user_default" selected style="background:#1E293B;">Temple Admin (Super Admin)</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="app-tabs">
+            <button class="tab-btn active" data-tab="tab-create">
+                <span class="tab-icon">📢</span>
+                <span class="tab-text">ప్రకటన సృష్టించు</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-voices">
+                <span class="tab-icon">🎙️</span>
+                <span class="tab-text">స్వర నిర్వహణ</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-templates">
+                <span class="tab-icon">📑</span>
+                <span class="tab-text">టెంప్లేట్‌లు</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-history">
+                <span class="tab-icon">🎧</span>
+                <span class="tab-text">ఆడియో రికార్డులు</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-training">
+                <span class="tab-icon">🎯</span>
+                <span class="tab-text">లిపి శిక్షణ</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-privacy">
+                <span class="tab-icon">🔒</span>
+                <span class="tab-text">గోప్యత & భద్రత</span>
+            </button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- TAB 1: CREATE ANNOUNCEMENT -->
+            <section id="tab-create" class="tab-content active">
+                <div class="grid-layout">
+                    <!-- Left Column: Inputs -->
+                    <div class="card main-form-card">
+                        <div class="card-header">
+                            <h2>1. తెలుగు స్క్రిప్ట్ నమోదు చేయండి (Enter Telugu Script)</h2>
+                            <span class="badge">తెలుగు</span>
+                        </div>
+                        
+                        <div class="template-pills" id="quick-template-bar">
+                            <span class="pill-label">త్వరిత ఎంపికలు:</span>
+                            <!-- Dynamic templates pill buttons inserted via JS -->
+                        </div>
+
+                        <div class="textarea-container">
+                            <textarea id="telugu-script-input" rows="5" placeholder="ఇక్కడ తెలుగు వ్యాఖ్యానం లేదా ప్రకటన టైప్ చేయండి... (ఉదా: శ్రీ మోపిదేవి క్షేత్రానికి విచ్చేసిన భక్తులందరికీ స్వాగతం. ఉదయం 10:30 AM గంటలకు అభిషేకం ప్రారంభమగును.)"></textarea>
+                            <div class="textarea-footer">
+                                <span id="char-count">0 అక్షరాలు</span>
+                                <button class="btn-text" id="btn-clear-script">క్లియర్ చేయి</button>
+                            </div>
+                        </div>
+
+                        <!-- Voice Selection -->
+                        <div class="form-group margin-top-lg">
+                            <label for="voice-select" class="form-label">
+                                <span>2. స్వర ఎంపిక (Select Voice)</span>
+                            </label>
+                            <select id="voice-select" class="form-select">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+
+                        <!-- Speaking Style Grid -->
+                        <div class="form-group margin-top-lg">
+                            <label class="form-label">
+                                <span>3. శైలి మరియు భావోద్వేగం (Speaking Style)</span>
+                            </label>
+                            <div class="style-grid" id="style-grid">
+                                <div class="style-card active" data-style="Devotional">
+                                    <div class="style-icon">🙏</div>
+                                    <div class="style-title">భక్తిపూర్వక (Devotional)</div>
+                                    <div class="style-sub">ప్రశాంత మరియు పవిత్ర ధ్వని</div>
+                                </div>
+                                <div class="style-card" data-style="Announcement">
+                                    <div class="style-icon">📢</div>
+                                    <div class="style-title">ప్రకటన (Announcement)</div>
+                                    <div class="style-sub">స్పష్టమైన బిగ్గరగా ఉండే ధ్వని</div>
+                                </div>
+                                <div class="style-card" data-style="Warm">
+                                    <div class="style-icon">❤️</div>
+                                    <div class="style-title">ఆప్యాయత (Warm)</div>
+                                    <div class="style-sub">దయగల మరియు స్వాగత ధ్వని</div>
+                                </div>
+                                <div class="style-card" data-style="Festival">
+                                    <div class="style-icon">🎉</div>
+                                    <div class="style-title">ఉత్సవ (Festival)</div>
+                                    <div class="style-sub">ఉత్సాహభరితమైన ఉత్సవ ధ్వని</div>
+                                </div>
+                                <div class="style-card" data-style="Important">
+                                    <div class="style-icon">⚠️</div>
+                                    <div class="style-title">ముఖ్యమైన (Important)</div>
+                                    <div class="style-sub">దృష్టిని ఆకర్షించే సూచన</div>
+                                </div>
+                                <div class="style-card" data-style="Spiritual">
+                                    <div class="style-icon">🕉️</div>
+                                    <div class="style-title">వేద ధ్వని (Spiritual)</div>
+                                    <div class="style-sub">గంభీరమైన పండిత శైలి</div>
+                                </div>
+                            </div>
+                        <!-- Submit Action -->
+                        <div class="margin-top-xl">
+                            <button id="btn-generate" class="btn btn-primary btn-block btn-lg">
+                                <span class="btn-icon">⚡</span>
+                                <span>ధ్వనిని సృష్టించండి (GENERATE VOICE)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Generation Progress & Live Audio Player -->
+                    <div class="card preview-card">
+                        <div class="card-header">
+                            <h2>ఆడియో ప్రివ్యూ మరియు నియంత్రణ</h2>
+                            <span id="job-status-badge" class="badge badge-neutral">సిద్ధంగా ఉంది</span>
+                        </div>
+
+                        <!-- Pipeline Progress Box (Shown during processing) -->
+                        <div id="pipeline-progress-box" class="progress-box hidden">
+                            <div class="progress-header">
+                                <span class="spinner"></span>
+                                <span id="pipeline-step-text">తెలుగు స్క్రిప్ట్ విశ్లేషిస్తోంది...</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div id="pipeline-progress-fill" class="progress-bar-fill" style="width: 5%;"></div>
+                            </div>
+                            <ul class="pipeline-steps-list">
+                                <li id="step-1" class="step-item"><span>✓</span> తెలుగు పాఠ్య శుద్ధీకరణ (Text Normalization)</li>
+                                <li id="step-2" class="step-item"><span>✓</span> మోపిదేవి ఉచ్చారణ సరిచూడటం (Pronunciation)</li>
+                                <li id="step-3" class="step-item"><span>●</span> ధ్వని విభాగాల ఉత్పత్తి (Speech Director)</li>
+                                <li id="step-4" class="step-item"><span>○</span> శబ్ద ప్రభావాల కలయిక (Temple FX)</li>
+                                <li id="step-5" class="step-item"><span>○</span> ఆడియో మాస్టరింగ్ (Final Mastering)</li>
+                            </ul>
+                        </div>
+
+                        <!-- Audio Player (Shown when complete) -->
+                        <div id="audio-player-container" class="player-container hidden">
+                            <div class="waveform-box">
+                                <canvas id="waveform-canvas" width="400" height="90"></canvas>
+                            </div>
+
+                            <audio id="main-audio-player" class="hidden-audio"></audio>
+
+                            <div class="player-controls">
+                                <button id="btn-play-pause" class="btn-round btn-play">
+                                    <span id="play-icon">▶</span>
+                                </button>
+                                <div class="time-display">
+                                    <span id="current-time">0:00</span> / <span id="total-duration">0:00</span>
+                                </div>
+                            </div>
+
+                            <div class="player-meta margin-top-md">
+                                <div class="meta-item"><span class="meta-label">స్వరము:</span> <span id="meta-voice-name">-</span></div>
+                                <div class="meta-item"><span class="meta-label">శైలి:</span> <span id="meta-style-name">-</span></div>
+                            </div>
+
+                            <div class="action-buttons-grid margin-top-lg">
+                                <button id="btn-open-regen" class="btn btn-secondary">
+                                    <span>🔄 తిరిగిన సృష్టించు (Regenerate)</span>
+                                </button>
+                                <button id="btn-download-mp3" class="btn btn-success">
+                                    <span>⬇️ డోన్లోడ్ MP3</span>
+                                </button>
+                                <button id="btn-share" class="btn btn-outline">
+                                    <span>🔗 షేర్ చేయి (Share)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Default Empty State -->
+                        <div id="empty-player-state" class="empty-state">
+                            <div class="empty-icon">🕉️</div>
+                            <h3>ధ్వని ఇంకా సృష్టించబడలేదు</h3>
+                            <p>వ్యాఖ్యానాన్ని నమోదు చేసి "ధ్వనిని సృష్టించండి" బటన్ నొక్కండి.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: VOICE MANAGEMENT -->
+            <section id="tab-voices" class="tab-content">
+                <div class="grid-layout">
+                    <!-- Record Voice Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>కొత్త స్వరాన్ని రికార్డ్ చేయండి (Create Custom Voice Profile)</h2>
+                        </div>
+                        <p class="instructions-text">
+                            ఫోన్ లేదా మైక్రోఫోన్ ద్వారా మీ స్వరాన్ని రికార్డ్ చేయండి. ప్రశాంతమైన వాతావరణంలో సహజంగా మాట్లాడండి.
+                        </p>
+
+                        <div class="form-group margin-top-md">
+                            <label class="form-label">స్వర పేరు (Voice Name)</label>
+                            <input type="text" id="custom-voice-name" class="form-input" placeholder="ఉదా: ప్రధాన పూజారి గారి స్వరం">
+                        </div>
+
+                        <div class="recorder-box margin-top-lg">
+                            <div id="mic-visualizer-bar" class="mic-bar"></div>
+                            <div class="recorder-status">
+                                <span id="recording-status-text">రికార్డింగ్ చేయడానికి సిద్ధంగా ఉంది</span>
+                            </div>
+                            
+                            <div class="recorder-actions margin-top-md">
+                                <button id="btn-start-record" class="btn btn-danger">
+                                    <span>🔴 రికార్డ్ ప్రారంభించు (Record)</span>
+                                </button>
+                                <button id="btn-stop-record" class="btn btn-secondary hidden">
+                                    <span>⏹️ ఆపివేయి (Stop)</span>
+                                </button>
+                            </div>
+
+                            <audio id="recorded-preview" controls class="margin-top-md hidden w-full"></audio>
+
+                            <div id="quality-indicator" class="quality-badge margin-top-md hidden">
+                                <span>రికార్డింగ్ నాణ్యత: </span>
+                                <strong id="quality-score-text">🟢 Good</strong>
+                            </div>
+                        </div>
+
+                        <div class="margin-top-xl">
+                            <button id="btn-upload-voice" class="btn btn-primary btn-block" disabled>
+                                <span>📤 స్వర ప్రొఫైల్ సృష్టించు (Save Voice Profile)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mobile Voice Training Session Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>🎙️ స్వర శిక్షణ సెషన్ (Mobile Voice Training Session)</h2>
+                            <span class="badge badge-primary" id="training-session-badge">సెషన్ 1 / 5</span>
+                        </div>
+                        <p class="instructions-text">
+                            మీ స్వర మోడల్ పరిపూర్ణంగా పనిచేయుటకు క్రింది వాక్యాన్ని స్పష్టంగా చదివి రికార్డ్ చేయండి:
+                        </p>
+
+                        <div class="sentence-training-box margin-top-md" style="background:#1E293B; padding:16px; border-radius:8px; border:1px solid #334155;">
+                            <strong style="color:#94A3B8; font-size:0.85rem;">లక్ష్య వాక్యం (Read Sentence):</strong>
+                            <p id="target-sentence-text" style="color:#F8FAFC; font-size:1.15rem; font-weight:600; margin-top:8px;">
+                                "శ్రీ మోపిదేవి సుబ్రహ్మణ్యేశ్వర స్వామి వారి పవిత్ర దివ్య క్షేత్రానికి విచ్చేసిన భక్తులందరికీ హృదయపూర్వక స్వాగతం."
+                            </p>
+                        </div>
+
+                        <div class="recorder-box margin-top-md">
+                            <div class="recorder-actions">
+                                <button id="btn-train-rec" class="btn btn-danger">
+                                    <span>🔴 రికార్డ్ ప్రారంభించు (Record)</span>
+                                </button>
+                                <button id="btn-train-stop" class="btn btn-secondary hidden">
+                                    <span>⏹️ ఆపివేయి (Stop)</span>
+                                </button>
+                            </div>
+                            <audio id="train-preview-audio" controls class="margin-top-md hidden w-full"></audio>
+                            
+                            <div id="train-quality-badges" class="margin-top-md hidden" style="display:flex; gap:10px; flex-wrap:wrap;">
+                                <span class="badge badge-success">✓ వ్యవధి: 3.2 సెకన్లు</span>
+                                <span class="badge badge-success">✓ శబ్దం: స్వచ్ఛం (SNR 28dB)</span>
+                                <span class="badge badge-success">✓ వాల్యూమ్: సరైనది</span>
+                            </div>
+
+                            <div class="margin-top-md" style="display:flex; gap:12px;">
+                                <button id="btn-train-retake" class="btn btn-outline hidden" style="flex:1;">🔄 పునఃగ్రహణ (Retake)</button>
+                                <button id="btn-train-accept" class="btn btn-success hidden" style="flex:1;">✓ అంగీకరించు & తదుపరి (Accept & Next)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Available Voices List -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>అందుబాటులో ఉన్న స్వరాలు (Available Voice Profiles)</h2>
+                        </div>
+                        <div id="voices-list-container" class="voices-grid margin-top-md">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: TEMPLATES -->
+            <section id="tab-templates" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>ఆలయ పూర్వసిద్ధ టెంప్లేట్‌లు (Predefined Temple Templates)</h2>
+                    </div>
+                    <div class="templates-grid margin-top-lg" id="templates-grid-container">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: HISTORY -->
+            <section id="tab-history" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>ఇటీవలి ఆడియో ప్రకటనలు (Recent Announcements History)</h2>
+                    </div>
+                    <div class="history-list margin-top-md" id="history-list-container">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: ADAPTIVE VOICE TRAINING -->
+            <section id="tab-training" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🎯 లిపి శిక్షణ మరియు స్వర మోడల్ మెరుగుదల (Adaptive Voice Training)</h2>
+                    </div>
+                    <p class="instructions-text">
+                        వ్యక్తపరిచిన ప్రకటనలలో కష్టమైన తెలుగు పదాలు గుర్తించబడినప్పుడు, ఆ పదాలకు సంబంధించిన స్వర నమూనాలను ఇక్కడ రికార్డ్ చేయండి. మీ రికార్డింగ్ నమూనాలు మీ స్వర మోడల్‌ను మరింత మానవ సహజంగా శిక్షణ ఇస్తాయి.
+                    </p>
+                    <div class="training-requests-list margin-top-md" id="training-requests-container">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: PRIVACY & SETTINGS -->
+            <section id="tab-privacy" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>స్వర డేటా గోప్యత మరియు భద్రత (Voice Data Privacy)</h2>
+                    </div>
+                    <div class="privacy-content">
+                        <div class="privacy-box">
+                            <h3>🔒 ఎన్‌క్రిప్టెడ్ ప్రాసెసింగ్ (Encrypted Pipeline)</h3>
+                            <p>మీ ధ్వని రికార్డింగ్‌లు ఎన్‌క్రిప్ట్ చేయబడి కేవలం తాత్కాలిక మోడల్ ప్రాసెసింగ్ కోసం ఉపయోగించబడతాయి.</p>
+                        </div>
+                        <div class="privacy-box margin-top-md">
+                            <h3>🗑️ రికార్డింగ్ తొలగింపు (Automatic Raw Recording Deletion)</h3>
+                            <p>స్వర మోడల్ సిద్ధమైన వెంటనే మీ అసలు ఆడియో రికార్డింగ్ ఫైల్స్ సిస్టమ్ నుండి స్వయంచాలకంగా తొలగించబడతాయి.</p>
+                        </div>
+                        <div class="privacy-box margin-top-md">
+                            <h3>⚠️ స్వర ప్రొఫైల్ శాశ్వత తొలగింపు (Delete Voice Profile)</h3>
+                            <p>మీరు ఎప్పుడైనా "స్వర నిర్వహణ" ట్యాబ్ నుండి మీ స్వంత స్వర ప్రొఫైల్‌ను పూర్తిగా తొలగించవచ్చు.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- REGENERATE MODAL -->
+    <div id="modal-regen" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>తిరిగి సృష్టించు (Regenerate Audio)</h3>
+                <button class="modal-close" id="btn-close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>ప్రస్తుత ధ్వని నచ్చలేదా? క్రింది ఎంపికలతో తిరిగి సృష్టించండి:</p>
+                <div class="form-group margin-top-md">
+                    <label class="form-label">శైలి మార్చండి:</label>
+                    <select id="modal-style-select" class="form-select">
+                        <option value="Devotional">🙏 భక్తిపూర్వక (More Devotional)</option>
+                        <option value="Announcement">📢 ప్రకటనా శైలి (Clearer Announcement)</option>
+                        <option value="Warm">❤️ ఆప్యాయత (Slower & Warmer)</option>
+                        <option value="Important">⚠️ ముఖ్యమైన (Urgent & Loud)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-cancel-regen" class="btn btn-secondary">రద్దు చేయి</button>
+                <button id="btn-submit-regen" class="btn btn-primary">సృష్టించు (Regenerate Now)</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
