@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final assignedData = await ApiService.fetchUserAssignedVoice(widget.activeUserId);
       setState(() {
         _voices = voices;
-        _selectedVoiceId = assignedData['assigned_voice_id'] ?? (voices.isNotEmpty ? voices.first.id : null);
+        _selectedVoiceId = assignedData['assigned_voice_id'] ?? (_voices.isNotEmpty ? _voices.first.id : null);
       });
     } catch (e) {
       debugPrint('Failed to load voices: $e');
@@ -182,9 +182,18 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '2. ధ్వని శైలి (Select Delivery Style)',
-                    style: TextStyle(color: Color(0xFFE5A93C), fontWeight: FontWeight.bold, fontSize: 15),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        '2. ధ్వని శైలి (Select Delivery Style)',
+                        style: TextStyle(color: Color(0xFFE5A93C), fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      Text(
+                        'లభ్యమైన స్వరాలు: ${_voices.length}',
+                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   GridView.builder(

@@ -64,7 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Text('👤 వినియోగదారు ఖాతా మార్పు (Select Account)', style: TextStyle(color: Color(0xFFE5A93C), fontWeight: FontWeight.bold, fontSize: 15)),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: widget.activeUserId,
+                    initialValue: widget.activeUserId,
                     dropdownColor: const Color(0xFF0F172A),
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(

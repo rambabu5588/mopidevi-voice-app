@@ -53,7 +53,7 @@ class _MopideviVoiceAppState extends State<MopideviVoiceApp> {
                     const Text('AI VOICE APP', style: TextStyle(color: Color(0xFFE5A93C), fontWeight: FontWeight.bold, fontSize: 22)),
                     const SizedBox(height: 24),
                     DropdownButtonFormField<String>(
-                      value: _activeUserId,
+                      initialValue: _activeUserId,
                       dropdownColor: const Color(0xFF0F172A),
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
