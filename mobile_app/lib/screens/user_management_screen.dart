@@ -289,7 +289,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         labelText: 'వ్యక్తి పేరు (Person Name)*',
-                        hintText: 'e.g. Ramesh or Sri Venkateswara Rao',
+                        hintText: 'e.g. Sri Venkateswara Rao or Operator Name',
                         hintStyle: const TextStyle(color: Colors.white24),
                         labelStyle: const TextStyle(color: Colors.white70),
                         filled: true,

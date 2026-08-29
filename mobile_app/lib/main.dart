@@ -773,7 +773,7 @@ class _LandingAuthScreenState extends State<LandingAuthScreen> {
     } catch (_) {}
 
     final operators = users.where((u) => u.role != 'super_admin').toList();
-    final idController = TextEditingController(text: operators.isNotEmpty ? operators.first.id : '');
+    final idController = TextEditingController();
     final passwordController = TextEditingController();
     bool isAuthenticating = false;
 
@@ -800,34 +800,26 @@ class _LandingAuthScreenState extends State<LandingAuthScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (operators.isNotEmpty) ...[
-                      const Text('ఆపరేటర్ ఎంచుకోండి (Quick Select):', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                      const SizedBox(height: 6),
-                      DropdownButtonFormField<String>(
-                        value: operators.any((u) => u.id == idController.text) ? idController.text : operators.first.id,
-                        dropdownColor: const Color(0xFF0F172A),
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: const Color(0xFF0F172A),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        items: operators.map((u) {
-                          return DropdownMenuItem<String>(
-                            value: u.id,
-                            child: Text('${u.name} (${u.id})', style: const TextStyle(fontSize: 13)),
+                      const Text('రిజిస్టర్ అయిన ఆపరేటర్లు (Registered Operators):', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: operators.map((u) {
+                          final isSelected = idController.text == u.id || idController.text == u.name;
+                          return ChoiceChip(
+                            label: Text(u.name, style: TextStyle(color: isSelected ? Colors.black : Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                            selected: isSelected,
+                            selectedColor: const Color(0xFFE5A93C),
+                            backgroundColor: const Color(0xFF0F172A),
+                            onSelected: (selected) {
+                              setDialogState(() {
+                                idController.text = selected ? u.id : '';
+                              });
+                            },
                           );
                         }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setDialogState(() {
-                              idController.text = val;
-                            });
-                          }
-                        },
                       ),
-                      const SizedBox(height: 14),
-                      const Center(child: Text('- లేదా (or enter manually) -', style: TextStyle(color: Colors.white38, fontSize: 11))),
                       const SizedBox(height: 14),
                     ],
                     TextField(
@@ -836,7 +828,7 @@ class _LandingAuthScreenState extends State<LandingAuthScreen> {
                       decoration: InputDecoration(
                         labelText: 'User ID / పేరు (Name)',
                         labelStyle: const TextStyle(color: Colors.white70),
-                        hintText: 'e.g. USR-00001 or Ramesh',
+                        hintText: 'e.g. USR-00001 or your name',
                         hintStyle: const TextStyle(color: Colors.white24),
                         filled: true,
                         fillColor: const Color(0xFF0F172A),
