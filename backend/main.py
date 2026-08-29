@@ -162,6 +162,23 @@ async def process_announcement_pipeline(job_id: str):
             rel_wav = f"/api/audio/announcement_{job_id}.wav"
             rel_mp3 = f"/api/audio/announcement_{job_id}.mp3"
             db.update_job_status(job_id, "COMPLETED", "✓ Pure Voice Announcement Ready!", 100, output_audio_path=rel_wav, output_mp3_path=rel_mp3)
+
+            # Record in announcement history
+            voice_prof = db.get_voice_profile_by_id(voice_id)
+            v_name = voice_prof.get("voice_name", "తెలుగు గుడి ప్రకటన స్వరము") if voice_prof else "తెలుగు గుడి ప్రకటన స్వరము"
+            title = raw_script[:35] + "..." if len(raw_script) > 35 else raw_script
+            duration_sec = len(speech_audio) / 1000.0 if speech_audio else 0.0
+            db.record_announcement_history(
+                job_id=job_id,
+                user_id=user_id,
+                voice_id=voice_id,
+                voice_name=v_name,
+                title=title,
+                script_text=raw_script,
+                style=style,
+                output_audio_path=rel_wav,
+                duration_seconds=duration_sec
+            )
         else:
             db.update_job_status(job_id, "FAILED", "Audio mastering failed", 0)
 
@@ -419,9 +436,62 @@ async def regenerate_announcement(job_id: str, req: RegenerateRequest, backgroun
     background_tasks.add_task(process_announcement_pipeline, new_job_id)
     return job
 
+# Task Engine Endpoints
+@app.get("/api/tasks")
+def get_user_tasks_endpoint(user_id: str = "USR-00001", status: Optional[str] = None):
+    return db.get_user_tasks(user_id, status)
+
+@app.get("/api/tasks/{task_id}")
+def get_task_details_endpoint(task_id: str):
+    task = db.get_task_details(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+@app.post("/api/tasks/{task_id}/submit-item")
+async def submit_task_item_endpoint(
+    task_id: str,
+    item_id: str = Form(...),
+    user_id: str = Form("USR-00001"),
+    target_text: str = Form(...),
+    file: UploadFile = File(...)
+):
+    ext = file.filename.split(".")[-1] if "." in file.filename else "wav"
+    audio_filename = f"task_{task_id}_{item_id}_{uuid.uuid4().hex[:4]}.{ext}"
+    saved_path = os.path.join(RECORDINGS_DIR, audio_filename)
+    
+    with open(saved_path, "wb") as f:
+        content = await file.read()
+        f.write(content)
+        
+    validation = AudioValidator.validate_training_sample(saved_path, target_text)
+    p_score = validation.get("pronunciation_score", 95.0)
+    q_score = validation.get("quality_score", "🟢 Good")
+    is_valid = validation.get("is_valid", True)
+    
+    result = db.submit_task_item_audio(
+        task_id=task_id,
+        item_id=item_id,
+        user_id=user_id,
+        audio_path=saved_path,
+        target_text=target_text,
+        pronunciation_score=p_score,
+        audio_quality=q_score,
+        is_accepted=is_valid
+    )
+    result["validation"] = validation
+    return result
+
+@app.get("/api/user/profile")
+def get_user_profile_endpoint(user_id: str = "USR-00001"):
+    return db.get_user_profile_summary(user_id)
+
 @app.get("/api/announcements/history")
-def get_history(user_id: str = "user_default"):
-    return db.list_recent_jobs(user_id)
+def get_history(user_id: str = "USR-00001"):
+    hist = db.get_user_announcement_history(user_id)
+    if not hist:
+        return db.list_recent_jobs(user_id)
+    return hist
 
 @app.get("/api/audio/{filename}")
 def get_audio_file(filename: str):

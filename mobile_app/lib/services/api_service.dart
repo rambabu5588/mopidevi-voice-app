@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import '../models/voice_model.dart';
 import '../models/job_model.dart';
 import '../models/user_model.dart';
+import '../models/task_model.dart';
+import '../models/history_model.dart';
 
 class ApiService {
   static String baseUrl = "https://mopidevi-voice-app.onrender.com"; // Online Render Cloud URL (works anywhere on 4G/5G/WiFi)
@@ -243,6 +245,69 @@ class ApiService {
         body: jsonEncode({'user_id': userId}),
       );
     } catch (_) {}
+  }
+
+  // 17. Fetch User Tasks
+  static Future<List<UserTask>> fetchUserTasks(String userId, {String? status}) async {
+    String url = '$baseUrl/api/tasks?user_id=$userId';
+    if (status != null && status != 'ALL') {
+      url += '&status=$status';
+    }
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.map((json) => UserTask.fromJson(json)).toList();
+    }
+    throw Exception('Failed to load tasks');
+  }
+
+  // 18. Fetch Task Details
+  static Future<UserTask> fetchTaskDetails(String taskId) async {
+    final response = await http.get(Uri.parse('$baseUrl/api/tasks/$taskId'));
+    if (response.statusCode == 200) {
+      return UserTask.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+    }
+    throw Exception('Failed to load task details');
+  }
+
+  // 19. Submit Task Item Recording
+  static Future<Map<String, dynamic>> submitTaskItemRecording({
+    required String taskId,
+    required String itemId,
+    required String userId,
+    required String targetText,
+    required String filePath,
+  }) async {
+    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/api/tasks/$taskId/submit-item'));
+    request.fields['item_id'] = itemId;
+    request.fields['user_id'] = userId;
+    request.fields['target_text'] = targetText;
+    request.files.add(await http.MultipartFile.fromPath('file', filePath));
+    var streamedResponse = await request.send();
+    var response = await http.Response.fromStream(streamedResponse);
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    }
+    throw Exception('Failed to submit task item recording');
+  }
+
+  // 20. Fetch User Profile Summary
+  static Future<Map<String, dynamic>> fetchUserProfileSummary(String userId) async {
+    final response = await http.get(Uri.parse('$baseUrl/api/user/profile?user_id=$userId'));
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    }
+    throw Exception('Failed to load user profile summary');
+  }
+
+  // 21. Fetch Announcement History
+  static Future<List<AnnouncementHistoryItem>> fetchAnnouncementHistory(String userId) async {
+    final response = await http.get(Uri.parse('$baseUrl/api/announcements/history?user_id=$userId'));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.map((json) => AnnouncementHistoryItem.fromJson(json)).toList();
+    }
+    throw Exception('Failed to load announcement history');
   }
 }
 

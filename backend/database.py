@@ -188,6 +188,61 @@ def init_db():
         ]
         cursor.executemany("INSERT INTO voice_profiles (id, user_id, voice_name, voice_type, audio_sample_path, quality_score, model_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", default_voices)
     
+    # Tasks table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS tasks (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        task_type TEXT NOT NULL, -- 'VOICE_IMPROVEMENT', 'RECORDING_RETAKE', 'INITIAL_RECORDING', 'ANNOUNCEMENT_GENERATION', 'QUALITY_CORRECTION'
+        title TEXT NOT NULL,
+        description TEXT,
+        status TEXT NOT NULL DEFAULT 'NEW', -- 'NEW', 'IN_PROGRESS', 'COMPLETED', 'RETAKE_REQUIRED'
+        total_items INTEGER NOT NULL DEFAULT 1,
+        completed_items INTEGER NOT NULL DEFAULT 0,
+        due_date TEXT NOT NULL DEFAULT 'Due Today',
+        created_at REAL NOT NULL,
+        updated_at REAL NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users (id)
+    );
+    """)
+
+    # Task Items table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS task_items (
+        id TEXT PRIMARY KEY,
+        task_id TEXT NOT NULL,
+        word_id TEXT NOT NULL,
+        target_text TEXT NOT NULL,
+        sentence_context TEXT,
+        status TEXT NOT NULL DEFAULT 'PENDING', -- 'PENDING', 'ACCEPTED', 'REJECTED', 'RETAKE'
+        audio_id TEXT,
+        audio_path TEXT,
+        pronunciation_score REAL DEFAULT 0.0,
+        audio_quality_score TEXT DEFAULT '🟢 Good',
+        created_at REAL NOT NULL,
+        updated_at REAL NOT NULL,
+        FOREIGN KEY (task_id) REFERENCES tasks (id)
+    );
+    """)
+
+    # Announcement History table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS announcement_history (
+        id TEXT PRIMARY KEY,
+        job_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        voice_id TEXT NOT NULL,
+        voice_name TEXT NOT NULL,
+        title TEXT NOT NULL,
+        script_text TEXT NOT NULL,
+        style TEXT NOT NULL,
+        output_audio_path TEXT NOT NULL,
+        duration_seconds REAL NOT NULL DEFAULT 0.0,
+        created_at REAL NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users (id)
+    );
+    """)
+
     cursor.execute("SELECT COUNT(*) FROM voice_versions")
     if cursor.fetchone()[0] == 0:
         now = time.time()
@@ -283,6 +338,15 @@ def get_voice_profiles(user_id: str) -> List[Dict[str, Any]]:
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+def get_voice_profile_by_id(voice_id: str) -> Optional[Dict[str, Any]]:
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM voice_profiles WHERE id = ?", (voice_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
 
 def delete_voice_profile(voice_id: str, user_id: str) -> bool:
     conn = get_db()
@@ -604,6 +668,268 @@ def save_voice_evaluation(eval_id: str, version_id: str, p_score: float, n_score
     conn.commit()
     conn.close()
     return {"id": eval_id, "version_id": version_id, "pronunciation_score": p_score, "naturalness_score": n_score, "clarity_score": c_score, "overall_score": o_score}
+
+DEFAULT_TEMPLE_TRAINING_WORDS = [
+    ("WORD-001", "మోపిదేవి", "శ్రీ మోపిదేవి సుబ్రహ్మణ్యేశ్వర స్వామి వారి దివ్య క్షేత్రం."),
+    ("WORD-002", "సుబ్రహ్మణ్యేశ్వర", "శ్రీ సుబ్రహ్మణ్యేశ్వర స్వామి వారికి ప్రత్యేక అభిషేకం."),
+    ("WORD-003", "సహస్రనామార్చన", "ఉదయం స్వామివారికి సహస్రనామార్చన పూజ జరుగును."),
+    ("WORD-004", "తీర్థప్రసాదాలు", "పవిత్ర తీర్థప్రసాదాలు ప్రాంగణంలో అందజేయబడును."),
+    ("WORD-005", "కళ్యాణోత్సవం", "శ్రీ వల్లీ దేవసేన సమేత సుబ్రహ్మణ్య కళ్యాణోత్సవం."),
+    ("WORD-006", "బ్రహ్మోత్సవాలు", "మోపిదేవి క్షేత్రంలో వార్షిక బ్రహ్మోత్సవాలు ఘనంగా జరుగును."),
+    ("WORD-007", "సర్పదోష", "సర్పదోష నివారణకు విశేష పూజలు జరుగుచున్నవి."),
+    ("WORD-008", "నివారణ", "సకల దోష నివారణ కొరకు భక్తులు దర్శనం చేసుకుంటారు."),
+    ("WORD-009", "మహాత్మ్యం", "మోపిదేవి క్షేత్ర పురాణ మహాత్మ్యం ఎంతో ప్రసిద్ధి చెందినది."),
+    ("WORD-010", "వల్లీ", "శ్రీ వల్లీ సమేత సుబ్రహ్మణ్య స్వామి దర్శనం."),
+    ("WORD-011", "దేవసేన", "అమ్మవారు శ్రీ దేవసేన సమేతంగా దర్శనమిచ్చును."),
+    ("WORD-012", "అభిషేకం", "నాగేంద్రునికి పంచామృత అభిషేకం నిర్వహించబడును.")
+]
+
+def seed_default_tasks_for_user(user_id: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM tasks WHERE user_id = ?", (user_id,))
+    if cursor.fetchone()[0] == 0:
+        now = time.time()
+        # Task 1: 12-Word Voice Improvement Task
+        t1_id = f"TASK-{uuid.uuid4().hex[:5].upper()}"
+        cursor.execute(
+            """INSERT INTO tasks (id, user_id, task_type, title, description, status, total_items, completed_items, due_date, created_at, updated_at)
+               VALUES (?, ?, 'VOICE_IMPROVEMENT', '🎙 Voice Improvement', 'Record 12 required temple words to calibrate and improve your voice model.', 'NEW', 12, 0, 'Due Today', ?, ?)""",
+            (t1_id, user_id, now, now)
+        )
+        for idx, (w_id, word, sentence) in enumerate(DEFAULT_TEMPLE_TRAINING_WORDS):
+            item_id = f"ITEM-{t1_id}-{idx+1:02d}"
+            cursor.execute(
+                """INSERT INTO task_items (id, task_id, word_id, target_text, sentence_context, status, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, 'PENDING', ?, ?)""",
+                (item_id, t1_id, w_id, word, sentence, now, now)
+            )
+
+        # Task 2: Recording Retake Task (3 words)
+        t2_id = f"TASK-{uuid.uuid4().hex[:5].upper()}"
+        cursor.execute(
+            """INSERT INTO tasks (id, user_id, task_type, title, description, status, total_items, completed_items, due_date, created_at, updated_at)
+               VALUES (?, ?, 'RECORDING_RETAKE', '🔄 Recording Retake', 'Retake 3 high-importance sacred words with optimal clarity.', 'NEW', 3, 0, 'Due Today', ?, ?)""",
+            (t2_id, user_id, now, now)
+        )
+        for idx, (w_id, word, sentence) in enumerate(DEFAULT_TEMPLE_TRAINING_WORDS[:3]):
+            item_id = f"ITEM-{t2_id}-{idx+1:02d}"
+            cursor.execute(
+                """INSERT INTO task_items (id, task_id, word_id, target_text, sentence_context, status, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, 'PENDING', ?, ?)""",
+                (item_id, t2_id, w_id, word, sentence, now, now)
+            )
+        conn.commit()
+    conn.close()
+
+def get_user_tasks(user_id: str, status_filter: Optional[str] = None) -> List[Dict[str, Any]]:
+    seed_default_tasks_for_user(user_id)
+    conn = get_db()
+    cursor = conn.cursor()
+    if status_filter and status_filter.upper() != 'ALL':
+        cursor.execute(
+            "SELECT * FROM tasks WHERE user_id = ? AND status = ? ORDER BY created_at DESC",
+            (user_id, status_filter.upper())
+        )
+    else:
+        cursor.execute(
+            "SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC",
+            (user_id,)
+        )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_task_details(task_id: str) -> Optional[Dict[str, Any]]:
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    task_row = cursor.fetchone()
+    if not task_row:
+        conn.close()
+        return None
+    task = dict(task_row)
+    cursor.execute("SELECT * FROM task_items WHERE task_id = ? ORDER BY id ASC", (task_id,))
+    items = [dict(r) for r in cursor.fetchall()]
+    task["items"] = items
+    conn.close()
+    return task
+
+def submit_task_item_audio(
+    task_id: str,
+    item_id: str,
+    user_id: str,
+    audio_path: str,
+    target_text: str,
+    pronunciation_score: float = 95.0,
+    audio_quality: str = "🟢 Good",
+    is_accepted: bool = True
+) -> Dict[str, Any]:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = time.time()
+    audio_id = f"AUD-{uuid.uuid4().hex[:6].upper()}"
+    status = "ACCEPTED" if is_accepted else "RETAKE"
+
+    cursor.execute(
+        """UPDATE task_items 
+           SET status = ?, audio_id = ?, audio_path = ?, pronunciation_score = ?, audio_quality_score = ?, updated_at = ?
+           WHERE id = ?""",
+        (status, audio_id, audio_path, pronunciation_score, audio_quality, now, item_id)
+    )
+
+    # Save to voice_training_samples
+    user = get_user_by_id(user_id)
+    voice_id = user.get("assigned_voice_id", "voice_te_male_1") if user else "voice_te_male_1"
+    sample_id = f"SMPL-{uuid.uuid4().hex[:6].upper()}"
+    cursor.execute(
+        """INSERT INTO voice_training_samples (id, voice_id, word_text, audio_path, acoustic_features, created_at)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (sample_id, voice_id, target_text, audio_path, json.dumps({"quality": audio_quality, "p_score": pronunciation_score}), now)
+    )
+
+    # Recalculate completed items on task
+    cursor.execute("SELECT COUNT(*) FROM task_items WHERE task_id = ? AND status = 'ACCEPTED'", (task_id,))
+    completed = cursor.fetchone()[0]
+    cursor.execute("SELECT total_items FROM tasks WHERE id = ?", (task_id,))
+    total_row = cursor.fetchone()
+    total = total_row[0] if total_row else 12
+
+    task_status = "COMPLETED" if completed >= total else ("IN_PROGRESS" if completed > 0 else "NEW")
+    cursor.execute(
+        "UPDATE tasks SET completed_items = ?, status = ?, updated_at = ? WHERE id = ?",
+        (completed, task_status, now, task_id)
+    )
+    conn.commit()
+    conn.close()
+
+    # If task completed, check if we can advance voice model version
+    if task_status == "COMPLETED":
+        advance_voice_version_if_ready(voice_id, user_id)
+
+    return {
+        "success": True,
+        "audio_id": audio_id,
+        "status": status,
+        "completed_items": completed,
+        "total_items": total,
+        "task_status": task_status
+    }
+
+def advance_voice_version_if_ready(voice_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = time.time()
+    cursor.execute("SELECT * FROM voice_versions WHERE voice_id = ? ORDER BY created_at DESC", (voice_id,))
+    versions = cursor.fetchall()
+    latest_ver_num = "v1.0"
+    if versions:
+        latest_ver_num = versions[0]["version_num"]
+    
+    try:
+        major, minor = latest_ver_num.replace("v", "").split(".")
+        next_ver = f"v{major}.{int(minor) + 1}"
+    except Exception:
+        next_ver = "v1.1"
+
+    new_ver_id = f"ver_{voice_id[:6]}_{next_ver.replace('.', '_')}_{uuid.uuid4().hex[:4]}"
+    cursor.execute(
+        "INSERT INTO voice_versions (id, voice_id, version_num, model_path, quality_score, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (new_ver_id, voice_id, next_ver, None, "🟢 Approved (96%)", "APPROVED", now)
+    )
+    assign_id = f"ASN-{uuid.uuid4().hex[:6].upper()}"
+    cursor.execute(
+        "INSERT INTO user_voice_assignments (id, user_id, voice_id, assigned_version_id, created_at) VALUES (?, ?, ?, ?, ?)",
+        (assign_id, user_id, voice_id, new_ver_id, now)
+    )
+    conn.commit()
+    conn.close()
+    return {"version_id": new_ver_id, "version_num": next_ver, "voice_id": voice_id}
+
+def get_user_profile_summary(user_id: str) -> Dict[str, Any]:
+    seed_default_tasks_for_user(user_id)
+    user = get_user_by_id(user_id)
+    if not user:
+        user = {
+            "id": user_id,
+            "name": "Mopidevi Operator",
+            "role": "operator",
+            "status": "Active",
+            "assigned_voice_id": "voice_te_male_1"
+        }
+    voice_id = user.get("assigned_voice_id", "voice_te_male_1") or "voice_te_male_1"
+    voice = get_voice_profile_by_id(voice_id)
+    voice_name = voice["voice_name"] if voice else "తెలుగు గుడి ప్రకటనా స్వరము 2"
+
+    versions = list_voice_versions(voice_id)
+    active_version = versions[0]["version_num"] if versions else "v1.0"
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM tasks WHERE user_id = ? AND status IN ('NEW', 'IN_PROGRESS', 'RETAKE_REQUIRED')", (user_id,))
+    pending_tasks_count = cursor.fetchone()[0]
+    conn.close()
+
+    return {
+        "user_id": user["id"],
+        "name": user["name"],
+        "role": user["role"],
+        "status": user["status"],
+        "assigned_voice_id": voice_id,
+        "voice_name": voice_name,
+        "active_version": active_version,
+        "voice_status": "🟢 Ready",
+        "pending_tasks_count": pending_tasks_count
+    }
+
+def record_announcement_history(
+    job_id: str,
+    user_id: str,
+    voice_id: str,
+    voice_name: str,
+    title: str,
+    script_text: str,
+    style: str,
+    output_audio_path: str,
+    duration_seconds: float = 0.0
+) -> Dict[str, Any]:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = time.time()
+    hist_id = f"HIST-{uuid.uuid4().hex[:6].upper()}"
+    cursor.execute(
+        """INSERT INTO announcement_history (id, job_id, user_id, voice_id, voice_name, title, script_text, style, output_audio_path, duration_seconds, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (hist_id, job_id, user_id, voice_id, voice_name, title, script_text, style, output_audio_path, duration_seconds, now)
+    )
+    conn.commit()
+    conn.close()
+    return {"id": hist_id, "job_id": job_id, "created_at": now}
+
+def get_user_announcement_history(user_id: str) -> List[Dict[str, Any]]:
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM announcement_history WHERE user_id = ? ORDER BY created_at DESC",
+        (user_id,)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    
+    now = time.time()
+    results = []
+    for r in rows:
+        d = dict(r)
+        created_time = d["created_at"]
+        diff_days = (now - created_time) / 86400.0
+        if diff_days < 1:
+            d["date_group"] = "Today"
+        elif diff_days < 2:
+            d["date_group"] = "Yesterday"
+        else:
+            d["date_group"] = "Older"
+        results.append(d)
+    return results
 
 # Run database init on import
 init_db()

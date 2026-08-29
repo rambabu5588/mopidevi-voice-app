@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
+import 'screens/tasks_screen.dart';
+import 'screens/audio_library_screen.dart';
+import 'screens/profile_screen.dart';
 import 'screens/user_management_screen.dart';
 import 'screens/settings_screen.dart';
 import 'services/api_service.dart';
@@ -1234,32 +1237,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     // -------------------------------------------------------------
-    // OPERATOR / REGULAR USER: SINGLE FOCUSED SCREEN (NO TABS)
+    // OPERATOR / REGULAR USER FLOW: TASK-ORIENTED DASHBOARD
     // -------------------------------------------------------------
-    if (!widget.isAdmin) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Row(
-            children: const [
-              Icon(Icons.temple_hindu, color: Color(0xFFE5A93C)),
-              SizedBox(width: 10),
-              Text(
-                'మోపిదేవి ఆలయ స్వర అనువర్తనం',
-                style: TextStyle(color: Color(0xFFE5A93C), fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ],
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout, color: Colors.white70),
-              tooltip: 'Logout',
-              onPressed: widget.onLogout,
-            )
-          ],
-        ),
-        body: HomeScreen(activeUserId: _currentUserId),
-      );
-    }
+    final List<Widget> userScreens = [
+      HomeScreen(
+        activeUserId: _currentUserId,
+        onNavigateTab: (idx) => setState(() => _currentIndex = idx),
+      ),
+      TasksScreen(activeUserId: _currentUserId),
+      AudioLibraryScreen(activeUserId: _currentUserId),
+      ProfileScreen(
+        activeUserId: _currentUserId,
+        onLogout: widget.onLogout,
+      ),
+    ];
+
+    const userNavItems = [
+      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'హోమ్ (Home)'),
+      BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'టాస్క్‌లు (Tasks)'),
+      BottomNavigationBarItem(icon: Icon(Icons.library_music), label: 'ఆడియోలు (Audio)'),
+      BottomNavigationBarItem(icon: Icon(Icons.person), label: 'ప్రొఫైల్ (Profile)'),
+    ];
 
     // -------------------------------------------------------------
     // ADMIN VIEWS: USER MANAGEMENT & SETTINGS
@@ -1277,15 +1275,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'సెట్టింగ్లు (Settings)'),
     ];
 
+    final screens = widget.isAdmin ? adminScreens : userScreens;
+    final navItems = widget.isAdmin ? adminNavItems : userNavItems;
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
-          children: const [
-            Icon(Icons.admin_panel_settings, color: Color(0xFFE5A93C)),
-            SizedBox(width: 10),
+          children: [
+            Icon(widget.isAdmin ? Icons.admin_panel_settings : Icons.temple_hindu, color: const Color(0xFFE5A93C)),
+            const SizedBox(width: 10),
             Text(
-              '🛡️ ADMIN CONSOLE',
-              style: TextStyle(color: Color(0xFFE5A93C), fontWeight: FontWeight.bold, fontSize: 16),
+              widget.isAdmin ? '🛡️ ADMIN CONSOLE' : 'మోపిదేవి ఆలయ స్వర అనువర్తనం',
+              style: const TextStyle(color: Color(0xFFE5A93C), fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ],
         ),
@@ -1298,17 +1299,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: IndexedStack(
-        index: _currentIndex < adminScreens.length ? _currentIndex : 0,
-        children: adminScreens,
+        index: _currentIndex < screens.length ? _currentIndex : 0,
+        children: screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex < adminScreens.length ? _currentIndex : 0,
+        currentIndex: _currentIndex < screens.length ? _currentIndex : 0,
         onTap: (index) => setState(() => _currentIndex = index),
         backgroundColor: const Color(0xFF1E293B),
         selectedItemColor: const Color(0xFFE5A93C),
         unselectedItemColor: Colors.white54,
         type: BottomNavigationBarType.fixed,
-        items: adminNavItems,
+        items: navItems,
       ),
     );
   }

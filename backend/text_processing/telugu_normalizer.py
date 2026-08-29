@@ -108,3 +108,50 @@ def segment_sentences(text: str) -> List[str]:
         if s:
             sentences.append(s)
     return sentences if sentences else [cleaned]
+
+def clean_telugu_token(text: str) -> str:
+    if not text:
+        return ""
+    # Strip non-Telugu and non-alphanumeric punctuation except standard characters
+    text = re.sub(r'[\u200B-\u200D\uFEFF]', '', text) # Remove zero-width characters
+    text = re.sub(r'[.,!?|:;"\'\(\)\[\]\{\}\-_\\/]', '', text)
+    text = re.sub(r'\s+', '', text)
+    return text.strip()
+
+def compare_telugu_texts(expected: str, detected: str) -> dict:
+    clean_exp = clean_telugu_token(expected)
+    clean_det = clean_telugu_token(detected)
+
+    if not clean_exp or not clean_det:
+        return {"match": False, "similarity": 0.0, "status": "FAIL", "reason": "Empty text"}
+
+    # Exact or substring match
+    if clean_exp in clean_det or clean_det in clean_exp:
+        return {"match": True, "similarity": 1.0, "status": "PASS", "reason": "Match found"}
+
+    # Compute character-level similarity
+    longer = max(len(clean_exp), len(clean_det))
+    common_chars = 0
+    i, j = 0, 0
+    while i < len(clean_exp) and j < len(clean_det):
+        if clean_exp[i] == clean_det[j]:
+            common_chars += 1
+            i += 1
+            j += 1
+        elif i + 1 < len(clean_exp) and clean_exp[i+1] == clean_det[j]:
+            i += 1
+        elif j + 1 < len(clean_det) and clean_exp[i] == clean_det[j+1]:
+            j += 1
+        else:
+            i += 1
+            j += 1
+
+    sim = common_chars / float(longer) if longer > 0 else 0.0
+    if sim >= 0.70:
+        return {"match": True, "similarity": round(sim, 2), "status": "PASS", "reason": "High phonetic similarity"}
+    elif sim >= 0.50:
+        return {"match": True, "similarity": round(sim, 2), "status": "REVIEW", "reason": "Acceptable similarity with review"}
+    else:
+        return {"match": False, "similarity": round(sim, 2), "status": "FAIL", "reason": "Mismatch"}
+
+
