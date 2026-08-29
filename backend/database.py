@@ -172,11 +172,6 @@ def init_db():
         users_seed = [
             ("sid", "AUTH-00000", "PROF-00000", "Siddhu Temple Admin", "admin@mopidevitemple.org", "super_admin", "Active", "Siddhu$1999", "voice_te_male_1", now),
             ("user_default", "AUTH-00001", "PROF-00001", "Temple Administrator", "admin@mopidevi.org", "super_admin", "Active", "Siddhu$1999", "voice_te_male_1", now),
-            ("USR-00001", "AUTH-00002", "PROF-00002", "Temple Operator 1", "operator1@mopidevi.org", "operator", "Active", "User$1234", "voice_te_male_1", now),
-            ("USR-00002", "AUTH-00003", "PROF-00003", "Temple Operator 2", "operator2@mopidevi.org", "operator", "Active", "User$1234", "voice_te_male_1", now),
-            ("manager_01", "AUTH-00004", "PROF-00004", "Voice Manager", "manager@mopidevi.org", "voice_manager", "Active", "User$1234", "voice_te_female_1", now),
-            ("operator_01", "AUTH-00005", "PROF-00005", "Sri Venkateswara Rao (Operator)", "venkat@mopidevi.org", "operator", "Active", "User$1234", "voice_te_male_1", now),
-            ("operator_02", "AUTH-00006", "PROF-00006", "Sri Subrahmanyam (Operator)", "subbu@mopidevi.org", "operator", "Active", "User$1234", "voice_te_male_1", now)
         ]
         cursor.executemany(
             """INSERT OR REPLACE INTO users (id, auth_id, profile_id, name, mobile_email, role, status, password, assigned_voice_id, created_at)
