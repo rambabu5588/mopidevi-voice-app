@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/user_management_screen.dart';
-import 'screens/templates_screen.dart';
-import 'screens/audio_library_screen.dart';
 import 'screens/settings_screen.dart';
 import 'services/api_service.dart';
 import 'services/biometric_service.dart';
@@ -1235,7 +1233,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Admin Views: User Management (Create/Delete) & Settings
+    // -------------------------------------------------------------
+    // OPERATOR / REGULAR USER: SINGLE FOCUSED SCREEN (NO TABS)
+    // -------------------------------------------------------------
+    if (!widget.isAdmin) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Row(
+            children: const [
+              Icon(Icons.temple_hindu, color: Color(0xFFE5A93C)),
+              SizedBox(width: 10),
+              Text(
+                'మోపిదేవి ఆలయ స్వర అనువర్తనం',
+                style: TextStyle(color: Color(0xFFE5A93C), fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ],
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.white70),
+              tooltip: 'Logout',
+              onPressed: widget.onLogout,
+            )
+          ],
+        ),
+        body: HomeScreen(activeUserId: _currentUserId),
+      );
+    }
+
+    // -------------------------------------------------------------
+    // ADMIN VIEWS: USER MANAGEMENT & SETTINGS
+    // -------------------------------------------------------------
     final List<Widget> adminScreens = [
       UserManagementScreen(activeUserId: _currentUserId),
       SettingsScreen(
@@ -1244,42 +1272,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     ];
 
-    // Operator Views: Announcement Generator, Templates, Audio Library, Settings
-    final List<Widget> operatorScreens = [
-      HomeScreen(activeUserId: _currentUserId),
-      TemplatesScreen(onSelectTemplate: (script) {
-        setState(() => _currentIndex = 0);
-      }),
-      const AudioLibraryScreen(),
-      SettingsScreen(
-        activeUserId: _currentUserId,
-        onUserChanged: (newId) => setState(() => _currentUserId = newId),
-      ),
-    ];
-
-    final screens = widget.isAdmin ? adminScreens : operatorScreens;
-
-    final adminNavItems = const [
+    const adminNavItems = [
       BottomNavigationBarItem(icon: Icon(Icons.manage_accounts), label: 'యూజర్లు (Users)'),
       BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'సెట్టింగ్లు (Settings)'),
-    ];
-
-    final operatorNavItems = const [
-      BottomNavigationBarItem(icon: Icon(Icons.record_voice_over), label: 'ప్రకటనలు'),
-      BottomNavigationBarItem(icon: Icon(Icons.description), label: 'టెంప్లేట్లు'),
-      BottomNavigationBarItem(icon: Icon(Icons.library_music), label: 'ఆడియోలు'),
-      BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'సెట్టింగ్లు'),
     ];
 
     return Scaffold(
       appBar: AppBar(
         title: Row(
-          children: [
-            Icon(widget.isAdmin ? Icons.admin_panel_settings : Icons.temple_hindu, color: const Color(0xFFE5A93C)),
-            const SizedBox(width: 10),
+          children: const [
+            Icon(Icons.admin_panel_settings, color: Color(0xFFE5A93C)),
+            SizedBox(width: 10),
             Text(
-              widget.isAdmin ? '🛡️ ADMIN CONSOLE' : 'OPERATOR DASHBOARD',
-              style: const TextStyle(color: Color(0xFFE5A93C), fontWeight: FontWeight.bold, fontSize: 16),
+              '🛡️ ADMIN CONSOLE',
+              style: TextStyle(color: Color(0xFFE5A93C), fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ],
         ),
@@ -1292,17 +1298,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: IndexedStack(
-        index: _currentIndex < screens.length ? _currentIndex : 0,
-        children: screens,
+        index: _currentIndex < adminScreens.length ? _currentIndex : 0,
+        children: adminScreens,
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex < screens.length ? _currentIndex : 0,
+        currentIndex: _currentIndex < adminScreens.length ? _currentIndex : 0,
         onTap: (index) => setState(() => _currentIndex = index),
         backgroundColor: const Color(0xFF1E293B),
         selectedItemColor: const Color(0xFFE5A93C),
         unselectedItemColor: Colors.white54,
         type: BottomNavigationBarType.fixed,
-        items: widget.isAdmin ? adminNavItems : operatorNavItems,
+        items: adminNavItems,
       ),
     );
   }

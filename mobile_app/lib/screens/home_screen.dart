@@ -37,6 +37,29 @@ class _HomeScreenState extends State<HomeScreen> {
     {"name": "Spiritual", "title": "🕉️ వేద శైలి", "sub": "పండిత వేద శైలి"},
   ];
 
+  final List<Map<String, String>> _templates = [
+    {
+      "title": "🐍 సర్పదోష పూజ",
+      "script": "ఉదయం 10:30 AM గంటలకు సర్పదోష నివారణ అభిషేకం మరియు సహస్రనామార్చన పూజ ప్రారంభమగును."
+    },
+    {
+      "title": "🙏 స్వాగతం",
+      "script": "శ్రీ మోపిదేవి సుబ్రహ్మణ్యేశ్వర స్వామి వారి దివ్య క్షేత్రానికి విచ్చేసిన భక్తులందరికీ హృదయపూర్వక స్వాగతం."
+    },
+    {
+      "title": "🛕 దర్శనం సమాచారం",
+      "script": "భక్తులు అందరూ లైనులో ప్రశాంతంగా వెళ్ళి నాగేంద్రస్వామి వారి దివ్య దర్శనం చేసుకోవాల్సిందిగా మనవి."
+    },
+    {
+      "title": "🍚 ప్రసాదం వితరణ",
+      "script": "స్వామివారి పవిత్ర తీర్థప్రసాదములు ప్రాంగణము వెనుక భాగాన వితరణ చేయబడుచున్నవి."
+    },
+    {
+      "title": "🎉 ఉత్సవ ప్రకటన",
+      "script": "శ్రీ సుబ్రహ్మణ్య షష్ఠి మహోత్సవాల సందర్భంగా ప్రత్యేక హారతి మరియు కళ్యాణం నిర్వహించబడును."
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -141,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Script Input Card
+          // 1. Script Input Card with Quick Templates
           Card(
             color: const Color(0xFF1E293B),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -150,11 +173,43 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '1. తెలుగు వ్యాఖ్యానం (Telugu Announcement Script)',
-                    style: TextStyle(color: Color(0xFFE5A93C), fontWeight: FontWeight.bold, fontSize: 15),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        '1. తెలుగు వ్యాఖ్యానం (Telugu Announcement)',
+                        style: TextStyle(color: Color(0xFFE5A93C), fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      TextButton(
+                        onPressed: () => _scriptController.clear(),
+                        style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(50, 30)),
+                        child: const Text('క్లియర్ (Clear)', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
+                  // Quick Template Pills
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _templates.map((tpl) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
+                          child: ActionChip(
+                            backgroundColor: const Color(0xFF0F172A),
+                            side: const BorderSide(color: Color(0xFFE5A93C), width: 0.8),
+                            label: Text(tpl['title']!, style: const TextStyle(color: Color(0xFFE5A93C), fontSize: 11, fontWeight: FontWeight.w600)),
+                            onPressed: () {
+                              setState(() {
+                                _scriptController.text = tpl['script']!;
+                              });
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
                   TextField(
                     controller: _scriptController,
                     maxLines: 4,
