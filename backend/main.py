@@ -52,6 +52,10 @@ class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
 
+class AdminSetPasswordRequest(BaseModel):
+    user_id: str
+    new_password: str
+
 class GenerateRequest(BaseModel):
     user_id: str = "user_default"
     voice_id: str
@@ -330,6 +334,13 @@ def change_password_endpoint(req: ChangePasswordRequest):
     res = db.change_user_password(req.user_id, req.current_password, req.new_password)
     if not res.get("success"):
         raise HTTPException(status_code=400, detail=res.get("message", "Password change failed"))
+    return res
+
+@app.post("/api/admin/users/set-password")
+def admin_set_password_endpoint(req: AdminSetPasswordRequest):
+    res = db.admin_set_user_password(req.user_id, req.new_password)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("message", "Password update failed"))
     return res
 
 @app.get("/api/users/{user_id}/assigned-voice")

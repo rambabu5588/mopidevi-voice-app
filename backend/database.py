@@ -467,22 +467,50 @@ def delete_user(user_id: str) -> bool:
 def change_user_password(user_id: str, current_password: str, new_password: str) -> Dict[str, Any]:
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT password FROM users WHERE id = ?", (user_id.strip(),))
+    # Support lookup by id, auth_id, or name
+    cursor.execute(
+        "SELECT id, name, password FROM users WHERE id = ? OR auth_id = ? OR name = ?", 
+        (user_id.strip(), user_id.strip(), user_id.strip())
+    )
     row = cursor.fetchone()
     if not row:
         conn.close()
-        return {"success": False, "message": "User not found"}
+        return {"success": False, "message": "యూజర్ ఖాతా కనుగొనబడలేదు (User account not found)"}
     
-    stored_password = row[0] if row[0] is not None else ""
+    actual_user_id = row["id"]
+    stored_password = row["password"] if row["password"] is not None else ""
+    
+    # Verify current password
     if stored_password != current_password.strip():
-        conn.close()
-        return {"success": False, "message": "Current password does not match"}
+        if (actual_user_id in ("sid", "user_default")) and current_password.strip() == "Siddhu$1999":
+            pass # Root admin fallback match
+        else:
+            conn.close()
+            return {"success": False, "message": "ప్రస్తుత పాత పాస్‌వర్డ్ సరిపోలలేదు (Old password does not match)"}
     
-    # Save exact plain-text password into database
-    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (new_password.strip(), user_id.strip()))
+    # Save new password into database
+    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (new_password.strip(), actual_user_id))
     conn.commit()
     conn.close()
-    return {"success": True, "message": "Password changed successfully"}
+    return {"success": True, "message": "పాస్‌వర్డ్ విజయవంతంగా డేటాబేస్ లో సేవ్ చేయబడింది! (Password updated successfully)", "user_id": actual_user_id}
+
+def admin_set_user_password(user_id: str, new_password: str) -> Dict[str, Any]:
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, name FROM users WHERE id = ? OR auth_id = ? OR name = ?", 
+        (user_id.strip(), user_id.strip(), user_id.strip())
+    )
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return {"success": False, "message": "యూజర్ ఖాతా కనుగొనబడలేదు (User account not found)"}
+    
+    actual_user_id = row["id"]
+    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (new_password.strip(), actual_user_id))
+    conn.commit()
+    conn.close()
+    return {"success": True, "message": "పాస్‌వర్డ్ విజయవంతంగా డేటాబేస్ లో సేవ్ చేయబడింది!", "user_id": actual_user_id}
 
 def record_user_logout(user_id: str):
     conn = get_db()
@@ -494,25 +522,10 @@ def record_user_logout(user_id: str):
 
 def authenticate_user(username_or_id: str, password: str) -> Optional[Dict[str, Any]]:
     now = time.time()
-    # Root admin check
-    if (username_or_id.strip() == "sid" or username_or_id.strip() == "user_default") and password.strip() == "Siddhu$1999":
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute("UPDATE users SET last_login_at = ? WHERE id IN ('sid', 'user_default')", (now,))
-        conn.commit()
-        conn.close()
-        return {
-            "id": "sid",
-            "auth_id": "AUTH-00000",
-            "profile_id": "PROF-00000",
-            "name": "Siddhu Temple Admin",
-            "role": "super_admin",
-            "status": "Active",
-            "last_login_at": now
-        }
-    
     conn = get_db()
     cursor = conn.cursor()
+    
+    # 1. Check exact match in database
     cursor.execute(
         "SELECT * FROM users WHERE (id = ? OR auth_id = ? OR name = ?) AND password = ?",
         (username_or_id.strip(), username_or_id.strip(), username_or_id.strip(), password.strip())
@@ -526,8 +539,25 @@ def authenticate_user(username_or_id: str, password: str) -> Optional[Dict[str, 
         d["last_login_at"] = now
         conn.close()
         return d
+    
+    # 2. Root admin fallback check (sid / Siddhu$1999)
+    if (username_or_id.strip() == "sid" or username_or_id.strip() == "user_default") and password.strip() == "Siddhu$1999":
+        cursor.execute("UPDATE users SET last_login_at = ? WHERE id IN ('sid', 'user_default')", (now,))
+        conn.commit()
+        conn.close()
+        return {
+            "id": "sid",
+            "auth_id": "AUTH-00000",
+            "profile_id": "PROF-00000",
+            "name": "Siddhu Temple Admin",
+            "role": "super_admin",
+            "status": "Active",
+            "last_login_at": now
+        }
+    
     conn.close()
     return None
+
 
 def assign_voice_to_user(user_id: str, voice_id: str, assigned_version_id: str = "v1.0") -> bool:
     conn = get_db()

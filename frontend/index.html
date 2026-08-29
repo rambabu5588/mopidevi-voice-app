@@ -375,6 +375,37 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- ADMIN & USER PASSWORD CHANGE CARD -->
+                <div class="card margin-top-lg">
+                    <div class="card-header">
+                        <h2>🔑 అడ్మిన్ & ఖాతా పాస్‌వర్డ్ మార్చుకోండి (Change Password)</h2>
+                    </div>
+                    <div style="padding: 16px;">
+                        <form id="form-change-password" onsubmit="return false;" style="max-width: 480px;">
+                            <div class="form-group">
+                                <label class="form-label">యూజర్ ఖాతా ఎంచుకోండి (Select Account):</label>
+                                <select id="change-pass-user-select" class="form-select"></select>
+                            </div>
+                            <div class="form-group margin-top-md">
+                                <label class="form-label">ప్రస్తుత పాత పాస్‌వర్డ్ (Current Password):</label>
+                                <input type="password" id="change-pass-current" class="form-input" placeholder="Enter current password" required />
+                            </div>
+                            <div class="form-group margin-top-md">
+                                <label class="form-label">కొత్త పాస్‌వర్డ్ (New Password):</label>
+                                <input type="password" id="change-pass-new" class="form-input" placeholder="Enter new password" required />
+                            </div>
+                            <div class="form-group margin-top-md">
+                                <label class="form-label">కొత్త పాస్‌వర్డ్ నిర్ధారణ (Confirm New Password):</label>
+                                <input type="password" id="change-pass-confirm" class="form-input" placeholder="Re-enter new password" required />
+                            </div>
+                            <button type="button" id="btn-submit-change-password" class="btn btn-primary margin-top-lg" style="width: 100%;">
+                                💾 పాస్‌వర్డ్ డేటాబేస్ లో సేవ్ చేయండి (Save Password)
+                            </button>
+                            <div id="change-pass-status" style="margin-top: 12px; font-size: 0.9rem; font-weight: 600;"></div>
+                        </form>
+                    </div>
+                </div>
             </section>
 
         </main>

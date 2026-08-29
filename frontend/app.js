@@ -743,7 +743,89 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // -------------------------------------------------------------
+    // ADMIN / USER PASSWORD CHANGE MANAGEMENT
+    // -------------------------------------------------------------
+    const changePassUserSelect = document.getElementById('change-pass-user-select');
+    const changePassCurrent = document.getElementById('change-pass-current');
+    const changePassNew = document.getElementById('change-pass-new');
+    const changePassConfirm = document.getElementById('change-pass-confirm');
+    const btnSubmitChangePass = document.getElementById('btn-submit-change-password');
+    const changePassStatus = document.getElementById('change-pass-status');
+
+    async function loadUsersForPasswordChange() {
+        if (!changePassUserSelect) return;
+        try {
+            const res = await fetch('/api/users');
+            const users = await res.json();
+            changePassUserSelect.innerHTML = '';
+            users.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id;
+                opt.textContent = `${u.name} (${u.id} - ${u.role})`;
+                changePassUserSelect.appendChild(opt);
+            });
+            if (userRoleSelect && changePassUserSelect.querySelector(`option[value="${userRoleSelect.value}"]`)) {
+                changePassUserSelect.value = userRoleSelect.value;
+            }
+        } catch (e) {
+            console.error('Failed to load users for password change:', e);
+        }
+    }
+
+    if (btnSubmitChangePass) {
+        btnSubmitChangePass.addEventListener('click', async () => {
+            const userId = changePassUserSelect.value;
+            const currentPassword = changePassCurrent.value.trim();
+            const newPassword = changePassNew.value.trim();
+            const confirmPassword = changePassConfirm.value.trim();
+
+            if (!currentPassword || !newPassword) {
+                changePassStatus.style.color = '#EF4444';
+                changePassStatus.textContent = 'దయచేసి అన్ని ఫీల్డ్‌లను నమోదు చేయండి';
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                changePassStatus.style.color = '#EF4444';
+                changePassStatus.textContent = 'కొత్త పాస్‌వర్డ్ సరిపోలలేదు (Passwords do not match)';
+                return;
+            }
+
+            changePassStatus.style.color = '#E5A93C';
+            changePassStatus.textContent = 'పాస్‌వర్డ్ సేవ్ చేయబడుతోంది...';
+
+            try {
+                const res = await fetch('/api/users/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        current_password: currentPassword,
+                        new_password: newPassword,
+                    }),
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.detail || 'పాస్‌వర్డ్ మార్చడం విఫలమైంది');
+                }
+
+                changePassStatus.style.color = '#10B981';
+                changePassStatus.textContent = '✓ పాస్‌వర్డ్ విజయవంతంగా డేటాబేస్ లో సేవ్ చేయబడింది!';
+                changePassCurrent.value = '';
+                changePassNew.value = '';
+                changePassConfirm.value = '';
+            } catch (err) {
+                changePassStatus.style.color = '#EF4444';
+                changePassStatus.textContent = `విఫలమైంది: ${err.message}`;
+            }
+        });
+    }
+
     // Initial Load
     loadVoices();
     loadTemplates();
+    loadUsersForPasswordChange();
 });
+
