@@ -11,3 +11,5 @@ media_storage/outputs/
 .vscode/
 build/
 .dart_tool/
+mobile_app/
+

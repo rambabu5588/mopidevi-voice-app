@@ -16,7 +16,6 @@ from backend.text_processing.pronunciation_dict import apply_pronunciation_rules
 from backend.speech_director.director import SpeechDirector, get_available_styles
 from backend.voice_engine.tts_generator import TTSGenerator
 from backend.audio_validation.validator import AudioValidator
-from backend.sound_effects.fx_mixer import TempleEffectsMixer
 from backend.mastering.masterer import AudioMasterer
 
 app = FastAPI(title="Mopidevi Temple Telugu Voice Application", version="1.0.0")
@@ -37,22 +36,30 @@ os.makedirs(RECORDINGS_DIR, exist_ok=True)
 os.makedirs(OUTPUTS_DIR, exist_ok=True)
 
 # Pydantic Schemas
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class CreateUserRequest(BaseModel):
+    name: str
+    password: str
+    mobile_email: Optional[str] = ""
+    role: Optional[str] = "operator"
+    status: Optional[str] = "Active"
+
+class ChangePasswordRequest(BaseModel):
+    user_id: str
+    current_password: str
+    new_password: str
+
 class GenerateRequest(BaseModel):
     user_id: str = "user_default"
     voice_id: str
     telugu_script: str
     style: str = "Devotional"
-    effect_settings: Dict[str, Any] = {
-        "bg_ambience": True,
-        "bell": True,
-        "conch": False,
-        "festival": False,
-        "intensity": 0.3
-    }
 
 class RegenerateRequest(BaseModel):
     style: Optional[str] = None
-    effect_settings: Optional[Dict[str, Any]] = None
 
 TEMPLE_TEMPLATES = [
     {
@@ -107,7 +114,6 @@ async def process_announcement_pipeline(job_id: str):
         raw_script = job["telugu_script"]
         style = job["style"]
         voice_id = job["voice_id"]
-        fx_settings = job["effect_settings"]
 
         # Stage 2: Sentence-by-Sentence Generation & Automated Validation using mopidevi_voice
         from mopidevi_voice.pipeline.generate import SentencePipelineGenerator
@@ -141,20 +147,12 @@ async def process_announcement_pipeline(job_id: str):
             progress_callback=report_progress
         )
 
-        # Stage 3: Audio Mastering & Optional Temple Effects
-        db.update_job_status(job_id, "PROCESSING", "● Final speech audio mastering & temple effects", 90)
+        # Stage 3: Audio Mastering
+        db.update_job_status(job_id, "PROCESSING", "● Final speech audio mastering", 90)
         out_wav = os.path.join(OUTPUTS_DIR, f"announcement_{job_id}.wav")
         out_mp3 = os.path.join(OUTPUTS_DIR, f"announcement_{job_id}.mp3")
-        
-        mixed_audio = speech_audio
-        if fx_settings and any(fx_settings.values()):
-            try:
-                from backend.sound_effects.fx_mixer import TempleEffectsMixer
-                mixed_audio = TempleEffectsMixer.mix_effects([speech_audio], fx_settings)
-            except Exception as ex:
-                print(f"[Pipeline] FX mixing notice: {ex}")
 
-        mastered = master_speech_audio(mixed_audio, out_wav, out_mp3)
+        mastered = master_speech_audio(speech_audio, out_wav, out_mp3)
 
         if mastered:
             rel_wav = f"/api/audio/announcement_{job_id}.wav"
@@ -290,9 +288,49 @@ class AssignVoiceRequest(BaseModel):
     voice_id: str
     version_id: Optional[str] = "v1.0"
 
+class LogoutRequest(BaseModel):
+    user_id: str
+
+@app.post("/api/auth/login")
+def login_endpoint(req: LoginRequest):
+    user = db.authenticate_user(req.username, req.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid ID or Password")
+    return {"status": "SUCCESS", "user": user}
+
+@app.post("/api/auth/logout")
+def logout_endpoint(req: LogoutRequest):
+    db.record_user_logout(req.user_id)
+    return {"status": "SUCCESS", "message": f"User {req.user_id} logged out"}
+
 @app.get("/api/users")
 def get_all_users_endpoint():
     return db.list_all_users()
+
+@app.post("/api/users/create")
+def create_user_endpoint(req: CreateUserRequest):
+    new_user = db.create_user(
+        name=req.name,
+        password=req.password,
+        mobile_email=req.mobile_email or "",
+        role=req.role or "operator",
+        status=req.status or "Active"
+    )
+    return new_user
+
+@app.delete("/api/users/{user_id}")
+def delete_user_endpoint(user_id: str):
+    success = db.delete_user(user_id)
+    if not success:
+        raise HTTPException(status_code=400, detail="Cannot delete root admin account or user not found")
+    return {"status": "SUCCESS", "message": f"User {user_id} deleted successfully"}
+
+@app.post("/api/users/change-password")
+def change_password_endpoint(req: ChangePasswordRequest):
+    res = db.change_user_password(req.user_id, req.current_password, req.new_password)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("message", "Password change failed"))
+    return res
 
 @app.get("/api/users/{user_id}/assigned-voice")
 def get_user_assigned_voice_endpoint(user_id: str):
@@ -339,8 +377,7 @@ async def generate_announcement(req: GenerateRequest, background_tasks: Backgrou
         user_id=req.user_id,
         voice_id=target_voice_id,
         telugu_script=req.telugu_script,
-        style=req.style,
-        effect_settings=req.effect_settings
+        style=req.style
     )
     background_tasks.add_task(process_announcement_pipeline, job_id)
     return job
@@ -360,15 +397,13 @@ async def regenerate_announcement(job_id: str, req: RegenerateRequest, backgroun
     
     new_job_id = f"JOB-{uuid.uuid4().hex[:6].upper()}"
     new_style = req.style if req.style else existing_job["style"]
-    new_fx = req.effect_settings if req.effect_settings else existing_job["effect_settings"]
     
     job = db.create_job(
         job_id=new_job_id,
         user_id=existing_job["user_id"],
         voice_id=existing_job["voice_id"],
         telugu_script=existing_job["telugu_script"],
-        style=new_style,
-        effect_settings=new_fx
+        style=new_style
     )
     background_tasks.add_task(process_announcement_pipeline, new_job_id)
     return job

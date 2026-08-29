@@ -2,6 +2,7 @@ import sqlite3
 import json
 import os
 import time
+import uuid
 from typing import Dict, Any, List, Optional
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mopidevi_app.db")
@@ -15,26 +16,38 @@ def init_db():
     conn = get_db()
     cursor = conn.cursor()
     
-    # Users table with role and assigned_voice_id
+    # Users table with auto-generated IDs, auth credentials, and roles
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
+        auth_id TEXT,
+        profile_id TEXT,
         name TEXT NOT NULL,
+        mobile_email TEXT,
         role TEXT NOT NULL DEFAULT 'operator', -- 'super_admin', 'voice_manager', 'operator', 'viewer'
+        status TEXT NOT NULL DEFAULT 'Active', -- 'Active', 'Inactive'
+        password TEXT DEFAULT 'User$1234',
         assigned_voice_id TEXT,
         created_at REAL NOT NULL
     );
     """)
     
-    # Safe schema migration for existing SQLite database files
-    try:
-        cursor.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'operator'")
-    except Exception:
-        pass
-    try:
-        cursor.execute("ALTER TABLE users ADD COLUMN assigned_voice_id TEXT")
-    except Exception:
-        pass
+    # Safe schema migrations
+    for col, col_def in [
+        ("auth_id", "TEXT"),
+        ("profile_id", "TEXT"),
+        ("mobile_email", "TEXT"),
+        ("role", "TEXT NOT NULL DEFAULT 'operator'"),
+        ("status", "TEXT NOT NULL DEFAULT 'Active'"),
+        ("password", "TEXT DEFAULT 'User$1234'"),
+        ("assigned_voice_id", "TEXT"),
+        ("last_login_at", "REAL"),
+        ("last_logout_at", "REAL")
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE users ADD COLUMN {col} {col_def}")
+        except Exception:
+            pass
 
     # Voice Versions table storing model versions (v1.0, v1.1, v2.0)
     cursor.execute("""
@@ -152,19 +165,24 @@ def init_db():
     );
     """)
 
-    # Seed default user, roles, and default voice versions if not exists
-    cursor.execute("SELECT COUNT(*) FROM users WHERE id = 'admin_01'")
+    # Seed default admin (sid / Siddhu$1999), operators, and roles
+    cursor.execute("SELECT COUNT(*) FROM users WHERE id = 'sid'")
     if cursor.fetchone()[0] == 0:
         now = time.time()
         users_seed = [
-            ("user_default", "Temple Administrator", "super_admin", "voice_te_male_1", now),
-            ("admin_01", "Super Admin", "super_admin", "voice_te_female_1", now),
-            ("manager_01", "Voice Manager", "voice_manager", "voice_te_female_1", now),
-            ("operator_01", "Temple Operator 1", "operator", "voice_te_male_1", now),
-            ("operator_02", "Temple Operator 2", "operator", "voice_te_male_1", now),
-            ("viewer_01", "Public Viewer", "viewer", None, now)
+            ("sid", "AUTH-00000", "PROF-00000", "Siddhu Temple Admin", "admin@mopidevitemple.org", "super_admin", "Active", "Siddhu$1999", "voice_te_male_1", now),
+            ("user_default", "AUTH-00001", "PROF-00001", "Temple Administrator", "admin@mopidevi.org", "super_admin", "Active", "Siddhu$1999", "voice_te_male_1", now),
+            ("USR-00001", "AUTH-00002", "PROF-00002", "Temple Operator 1", "operator1@mopidevi.org", "operator", "Active", "User$1234", "voice_te_male_1", now),
+            ("USR-00002", "AUTH-00003", "PROF-00003", "Temple Operator 2", "operator2@mopidevi.org", "operator", "Active", "User$1234", "voice_te_male_1", now),
+            ("manager_01", "AUTH-00004", "PROF-00004", "Voice Manager", "manager@mopidevi.org", "voice_manager", "Active", "User$1234", "voice_te_female_1", now),
+            ("operator_01", "AUTH-00005", "PROF-00005", "Sri Venkateswara Rao (Operator)", "venkat@mopidevi.org", "operator", "Active", "User$1234", "voice_te_male_1", now),
+            ("operator_02", "AUTH-00006", "PROF-00006", "Sri Subrahmanyam (Operator)", "subbu@mopidevi.org", "operator", "Active", "User$1234", "voice_te_male_1", now)
         ]
-        cursor.executemany("INSERT OR REPLACE INTO users (id, name, role, assigned_voice_id, created_at) VALUES (?, ?, ?, ?, ?)", users_seed)
+        cursor.executemany(
+            """INSERT OR REPLACE INTO users (id, auth_id, profile_id, name, mobile_email, role, status, password, assigned_voice_id, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", 
+            users_seed
+        )
     
     cursor.execute("SELECT COUNT(*) FROM voice_profiles")
     if cursor.fetchone()[0] == 0:
@@ -290,11 +308,11 @@ def delete_voice_profile(voice_id: str, user_id: str) -> bool:
     conn.close()
     return False
 
-def create_job(job_id: str, user_id: str, voice_id: str, telugu_script: str, style: str, effect_settings: dict) -> Dict[str, Any]:
+def create_job(job_id: str, user_id: str, voice_id: str, telugu_script: str, style: str, effect_settings: Optional[dict] = None) -> Dict[str, Any]:
     conn = get_db()
     cursor = conn.cursor()
     now = time.time()
-    fx_json = json.dumps(effect_settings)
+    fx_json = json.dumps(effect_settings or {})
     cursor.execute(
         """INSERT INTO announcement_jobs 
            (id, user_id, voice_id, telugu_script, style, effect_settings, status, current_step, progress_percent, created_at, updated_at) 
@@ -336,7 +354,7 @@ def get_job(job_id: str) -> Optional[Dict[str, Any]]:
     conn.close()
     if row:
         data = dict(row)
-        data["effect_settings"] = json.loads(data["effect_settings"])
+        data["effect_settings"] = json.loads(data["effect_settings"]) if data.get("effect_settings") else {}
         return data
     return None
 
@@ -349,7 +367,7 @@ def list_recent_jobs(user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
     res = []
     for r in rows:
         d = dict(r)
-        d["effect_settings"] = json.loads(d["effect_settings"])
+        d["effect_settings"] = json.loads(d["effect_settings"]) if d.get("effect_settings") else {}
         res.append(d)
     return res
 
@@ -408,12 +426,120 @@ def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
     conn.close()
     return dict(row) if row else None
 
+def create_user(name: str, password: str, mobile_email: str = "", role: str = "operator", status: str = "Active") -> Dict[str, Any]:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = time.time()
+    
+    # Calculate next sequence number for auto-generated IDs
+    cursor.execute("SELECT COUNT(*) FROM users")
+    count = cursor.fetchone()[0] + 1
+    
+    user_id = f"USR-{count:05d}"
+    auth_id = f"AUTH-{count:05d}"
+    profile_id = f"PROF-{count:05d}"
+    
+    cursor.execute(
+        """INSERT INTO users (id, auth_id, profile_id, name, mobile_email, role, status, password, assigned_voice_id, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'voice_te_male_1', ?)""",
+        (user_id, auth_id, profile_id, name, mobile_email, role, status, password, now)
+    )
+    conn.commit()
+    conn.close()
+    return {
+        "id": user_id,
+        "auth_id": auth_id,
+        "profile_id": profile_id,
+        "name": name,
+        "mobile_email": mobile_email,
+        "role": role,
+        "status": status,
+        "assigned_voice_id": "voice_te_male_1",
+        "created_at": now
+    }
+
+def delete_user(user_id: str) -> bool:
+    if user_id in ["sid", "user_default"]:
+        return False # Prevent deleting root admin
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    cursor.execute("DELETE FROM user_voice_assignments WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+    return True
+
+def change_user_password(user_id: str, current_password: str, new_password: str) -> Dict[str, Any]:
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT password FROM users WHERE id = ?", (user_id.strip(),))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return {"success": False, "message": "User not found"}
+    
+    stored_password = row[0] if row[0] is not None else ""
+    if stored_password != current_password.strip():
+        conn.close()
+        return {"success": False, "message": "Current password does not match"}
+    
+    # Save exact plain-text password into database
+    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (new_password.strip(), user_id.strip()))
+    conn.commit()
+    conn.close()
+    return {"success": True, "message": "Password changed successfully"}
+
+def record_user_logout(user_id: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    now = time.time()
+    cursor.execute("UPDATE users SET last_logout_at = ? WHERE id = ?", (now, user_id.strip()))
+    conn.commit()
+    conn.close()
+
+def authenticate_user(username_or_id: str, password: str) -> Optional[Dict[str, Any]]:
+    now = time.time()
+    # Root admin check
+    if (username_or_id.strip() == "sid" or username_or_id.strip() == "user_default") and password.strip() == "Siddhu$1999":
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET last_login_at = ? WHERE id IN ('sid', 'user_default')", (now,))
+        conn.commit()
+        conn.close()
+        return {
+            "id": "sid",
+            "auth_id": "AUTH-00000",
+            "profile_id": "PROF-00000",
+            "name": "Siddhu Temple Admin",
+            "role": "super_admin",
+            "status": "Active",
+            "last_login_at": now
+        }
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM users WHERE (id = ? OR auth_id = ? OR name = ?) AND password = ?",
+        (username_or_id.strip(), username_or_id.strip(), username_or_id.strip(), password.strip())
+    )
+    row = cursor.fetchone()
+    if row:
+        user_id = row["id"]
+        cursor.execute("UPDATE users SET last_login_at = ? WHERE id = ?", (now, user_id))
+        conn.commit()
+        d = dict(row)
+        d["last_login_at"] = now
+        conn.close()
+        return d
+    conn.close()
+    return None
+
 def assign_voice_to_user(user_id: str, voice_id: str, assigned_version_id: str = "v1.0") -> bool:
     conn = get_db()
     cursor = conn.cursor()
     now = time.time()
     cursor.execute("UPDATE users SET assigned_voice_id = ? WHERE id = ?", (voice_id, user_id))
-    assign_id = f"ASN-{uuid.uuid4().hex[:6].upper()}" if 'uuid' in globals() else f"ASN-{int(now)}"
+    assign_id = f"ASN-{uuid.uuid4().hex[:6].upper()}"
     cursor.execute(
         "INSERT INTO user_voice_assignments (id, user_id, voice_id, assigned_version_id, created_at) VALUES (?, ?, ?, ?, ?)",
         (assign_id, user_id, voice_id, assigned_version_id, now)

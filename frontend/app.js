@@ -18,11 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const voiceSelect = document.getElementById('voice-select');
     const styleCards = document.querySelectorAll('.style-card');
     const quickTemplateBar = document.getElementById('quick-template-bar');
-    const fxBell = document.getElementById('fx-bell');
-    const fxAmbience = document.getElementById('fx-ambience');
-    const fxConch = document.getElementById('fx-conch');
-    const fxIntensity = document.getElementById('fx-intensity');
-    const intensityVal = document.getElementById('intensity-val');
     const btnGenerate = document.getElementById('btn-generate');
 
     // Player & Progress Elements
@@ -214,12 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const voiceId = voiceSelect.value;
-        const effectSettings = {
-            bg_ambience: false,
-            bell: false,
-            conch: false,
-            intensity: 0.0
-        };
 
         // Reset UI
         emptyPlayerState.classList.add('hidden');
@@ -238,8 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     user_id: activeUserId,
                     voice_id: voiceId,
                     telugu_script: text,
-                    style: selectedStyle,
-                    effect_settings: effectSettings
+                    style: selectedStyle
                 })
             });
 

@@ -7,7 +7,6 @@ from backend.text_processing.telugu_normalizer import normalize_telugu_text, seg
 from backend.text_processing.pronunciation_dict import apply_pronunciation_rules
 from backend.speech_director.director import SpeechDirector, STYLE_PRESETS
 from backend.audio_validation.validator import AudioValidator
-from backend.sound_effects.fx_mixer import TempleEffectsGenerator, TempleEffectsMixer
 from backend.mastering.masterer import AudioMasterer
 
 class TestMopideviPipeline(unittest.TestCase):
@@ -36,28 +35,12 @@ class TestMopideviPipeline(unittest.TestCase):
         self.assertLess(prosody["speed"], 1.0)
         self.assertTrue(prosody["pre_pause_ms"] > 0)
 
-    def test_temple_fx_generation(self):
-        bell = TempleEffectsGenerator.generate_temple_bell(duration_sec=1.0)
-        self.assertIsInstance(bell, AudioSegment)
-        self.assertGreater(len(bell), 500)
-
-        conch = TempleEffectsGenerator.generate_conch_blast(duration_sec=1.0)
-        self.assertIsInstance(conch, AudioSegment)
-        self.assertGreater(len(conch), 500)
-
-        ambience = TempleEffectsGenerator.generate_temple_ambience(duration_sec=2.0)
-        self.assertIsInstance(ambience, AudioSegment)
-        self.assertGreater(len(ambience), 1000)
-
     def test_audio_mastering(self):
         speech = AudioSegment.silent(duration=1000)
-        bell = TempleEffectsGenerator.generate_temple_bell(duration_sec=1.0)
-        mix = speech.overlay(bell, position=0)
-        
         test_wav = os.path.join(os.path.dirname(__file__), "test_output.wav")
         test_mp3 = os.path.join(os.path.dirname(__file__), "test_output.mp3")
         
-        success = AudioMasterer.master_audio(mix, test_wav, test_mp3)
+        success = AudioMasterer.master_audio(speech, test_wav, test_mp3)
         self.assertTrue(success)
         self.assertTrue(os.path.exists(test_wav))
         
@@ -69,3 +52,4 @@ class TestMopideviPipeline(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
