@@ -517,6 +517,30 @@ def create_user(name: str, password: str, mobile_email: str = "", role: str = "o
         "created_at": now
     }
 
+def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM users WHERE id = ? OR auth_id = ? OR name = ?", 
+        (user_id.strip(), user_id.strip(), user_id.strip())
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return dict(row)
+    if user_id.strip() in ("sid", "user_default"):
+        return {
+            "id": "sid",
+            "auth_id": "AUTH-00000",
+            "profile_id": "PROF-00000",
+            "name": "Siddhu Temple Admin",
+            "role": "super_admin",
+            "status": "Active",
+            "assigned_voice_id": "voice_te_male_1"
+        }
+    return None
+
+
 def delete_user(user_id: str) -> bool:
     if user_id in ["sid", "user_default"]:
         return False # Prevent deleting root admin

@@ -27,15 +27,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadProfile() async {
-    setState(() => _isLoading = true);
+    // 1. First check locally saved account name for instant display
+    final lastAccount = await BiometricService.getLastLoginAccount();
+    if (lastAccount != null && lastAccount['userId'] == widget.activeUserId) {
+      if (mounted) {
+        setState(() {
+          _profile = {
+            'name': lastAccount['userName'] ?? widget.activeUserId,
+            'role': lastAccount['role'] ?? 'operator',
+            'status': 'Active 🟢',
+            'voice_name': 'తెలుగు గుడి ప్రకటన స్వరము 2',
+            'active_version': 'v1.1',
+            'pending_tasks_count': 0,
+          };
+          _isLoading = false;
+        });
+      }
+    }
+
+    // 2. Fetch fresh profile summary from backend
     try {
       final data = await ApiService.fetchUserProfileSummary(widget.activeUserId);
-      setState(() {
-        _profile = data;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _profile = data;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

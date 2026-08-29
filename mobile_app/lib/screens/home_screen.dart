@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../services/api_service.dart';
+import '../services/biometric_service.dart';
 import '../models/voice_model.dart';
 import '../models/job_model.dart';
 import '../models/task_model.dart';
@@ -82,18 +83,37 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadInitialData() async {
+    // 1. Instantly check local cache
+    final lastAccount = await BiometricService.getLastLoginAccount();
+    if (lastAccount != null && lastAccount['userId'] == widget.activeUserId) {
+      if (mounted) {
+        setState(() {
+          _profileSummary ??= {
+            'name': lastAccount['userName'] ?? widget.activeUserId,
+            'role': lastAccount['role'] ?? 'operator',
+            'status': 'Active 🟢',
+            'voice_name': 'తెలుగు గుడి ప్రకటన స్వరము 2',
+            'active_version': 'v1.1',
+          };
+        });
+      }
+    }
+
+    // 2. Fetch fresh profile summary & tasks
     try {
       final voices = await ApiService.fetchVoices(userId: widget.activeUserId);
       final assignedData = await ApiService.fetchUserAssignedVoice(widget.activeUserId);
       final profile = await ApiService.fetchUserProfileSummary(widget.activeUserId);
       final tasks = await ApiService.fetchUserTasks(widget.activeUserId);
 
-      setState(() {
-        _voices = voices;
-        _selectedVoiceId = assignedData['assigned_voice_id'] ?? (_voices.isNotEmpty ? _voices.first.id : null);
-        _profileSummary = profile;
-        _userTasks = tasks;
-      });
+      if (mounted) {
+        setState(() {
+          _voices = voices;
+          _selectedVoiceId = assignedData['assigned_voice_id'] ?? (_voices.isNotEmpty ? _voices.first.id : null);
+          _profileSummary = profile;
+          _userTasks = tasks;
+        });
+      }
     } catch (e) {
       debugPrint('Failed to load initial data: $e');
     }
